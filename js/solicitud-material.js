@@ -169,44 +169,7 @@ class MaterialHistorico {
             
         } catch (error) {
             console.error('❌ Error cargando clases:', error);
-            this.mostrarMensaje('Error al cargar clases. Usando datos de ejemplo.', 'info');
-            this.cargarClasesEjemplo();
         }
-    }
-
-    // Método de ejemplo por si falla la conexión
-    cargarClasesEjemplo() {
-        // Datos de ejemplo para pruebas
-        this.clasesHistoricas = [
-            {
-                _id: '1',
-                nombre: 'Stroke / IAM',
-                descripcion: 'Clase sobre Stroke e IAM',
-                fechaClase: '2026-02-24T10:00:00',
-                enlaces: {
-                    youtube: 'https://youtube.com/watch?v=ejemplo1',
-                    powerpoint: 'https://docs.google.com/presentation/d/ejemplo1'
-                },
-                estado: 'publicada',
-                instructores: ['Lic. Daniel de la Rosa', 'Lic. Liliana Areco']
-            },
-            {
-                _id: '2',
-                nombre: 'CoPaP',
-                descripcion: 'Clase sobre CoPaP',
-                fechaClase: '2026-02-25T15:30:00',
-                enlaces: {
-                    youtube: 'https://youtube.com/watch?v=ejemplo2',
-                    powerpoint: 'https://docs.google.com/presentation/d/ejemplo2'
-                },
-                estado: 'publicada',
-                instructores: ['Lic. Karina Raihy', 'Enf. Sara Aiduc']
-            }
-        ];
-        
-        console.log(`📚 ${this.clasesHistoricas.length} clases de ejemplo cargadas`);
-        this.procesarAnosDisponibles();
-        this.llenarSelectorAnos();
     }
 
     procesarAnosDisponibles() {

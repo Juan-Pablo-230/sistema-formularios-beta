@@ -10,18 +10,6 @@ class CalendarManager {
         return [
             {
                 id: 1,
-                title: "Stroke / IAM",
-                date: "2026-02-24",
-                displayDate: "24/02/2026",
-                time: "10:00",
-                displayTime: "10:00hs",
-                endTime: "13:00",
-                modality: "Virtual",
-                instructor: "Lic. Daniel de la Rosa, Lic. Liliana Areco",
-                location: "Microsoft Teams",
-            },
-            {
-                id: 2,
                 title: "CoPaP",
                 date: "2026-02-25",
                 displayDate: "25/02/2026",
@@ -33,7 +21,7 @@ class CalendarManager {
                 location: "Microsoft Teams",
             },
             {
-                id: 3,
+                id: 2,
                 title: "Ausentismo",
                 date: "2026-02-26",
                 displayDate: "26/02/2026",
@@ -42,7 +30,7 @@ class CalendarManager {
                 endTime: "13:00",
                 modality: "Presencial",
                 instructor: "Lic. Mercedes Sosa",
-                location: "Aula a confirmar",
+                location: "Auditorio",
             }
         ];
     }

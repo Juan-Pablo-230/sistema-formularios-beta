@@ -1,3 +1,5 @@
+console.warn("Esta es una versión BETA del sistema de inscripciones. Puede contener errores o funcionalidades incompletas. Por favor, utilícelo con precaución y reporte cualquier problema al desarrollador.");
+
 class AuthSystem {
     constructor() {
         console.log('AuthSystem MongoDB inicializado');
