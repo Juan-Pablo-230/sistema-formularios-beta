@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Formulario de Inscripción</title>
+    <link rel="stylesheet" href="/css/formularios.css">
+    <link rel="shortcut icon" href="/img/logo.png" type="image/x-icon">
+</head>
+<body>
+    <div class="container">
+        
+        <h1>Formulario de inscripción</h1>
+        <h2>Clase "Aspectos legales de la Práctica Profesional"</h2>
+        <p class="deadline">${elementoFecha.textContent}</p>
+
+        <div class="back-btn-container">
+            <a href="../index.html" class="back-btn">← Volver al Menú Principal</a>
+        </div>
+        
+        <form id="inscripcionForm" action="https://formsubmit.co/d1df6a40e65187bd492807cb6a2a7fde" method="POST">
+            <!-- Campo oculto para el asunto del email -->
+            <input type="hidden" name="_captcha" value="false">
+            <input type="hidden" name="_subject" value="Nueva Inscripción - Formulario">
+            <input type="hidden" name="_next" value=""> <!-- Enlace de la clase -->
+
+            
+            <div class="form-group">
+                <label for="apellidoNombre">Apellido y Nombre *</label>
+                <input type="text" id="apellidoNombre" name="apellidoNombre" required>
+            </div>
+
+            <div class="form-group">
+                <label for="legajo">Número de Legajo</label>
+                <input type="number" id="legajo" name="legajo" required>
+            </div>
+
+            <div class="form-group">
+                <label for="clase">Clase:</label>
+                <select id="clase" name="clase" readonly required>
+                    <option value="Aspectos legales de la Práctica Profesional">Aspectos legales de la Práctica Profesional</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="turno">Turno</label>
+                <select id="turno" name="turno" required>
+                    <option value="">Seleccione turno</option>
+                    <option value="Turno mañana">Turno mañana</option>
+                    <option value="Turno tarde">Turno tarde</option>
+                    <option value="Turno noche A">Turno noche A</option>
+                    <option value="Turno noche B">Turno noche B</option>
+                    <option value="Turno intermedio">Turno intermedio</option>
+                    <option value="Turno SADOFE">Turno Sábado, Domingo y feriado</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="email">Correo Electrónico</label>
+                <input type="email" id="email" name="email" required>
+            </div>
+
+            <button type="submit" class="submit-btn">Ingresar a la clase</button>
+        </form>
+    </div>
+
+    <script src="/js/formularios.js"></script>
+    <script src="/js/auth.js"></script>
+        <script>
+    // Configuración de fecha y hora de APERTURA
+    const fechaApertura = new Date('2026-03-19T09:50:00-03:00'); // 19 de marzo de 2026 a las 09:50hs (Hora Argentina)
+    
+    // Configuración de fecha y hora de CIERRE
+    const fechaCierre = new Date('2026-03-19T11:00:00-03:00'); // 19 de marzo de 2026 a las 11:00hs (Hora Argentina)
+
+    // Función para formatear fecha en español
+    function formatearFecha(fecha) {
+        const opciones = { 
+            day: '2-digit', 
+            month: '2-digit', 
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false // Formato 24hs
+        };
+        return fecha.toLocaleDateString('es-AR', opciones).replace(',', ' a las') + 'hs';
+    }
+    
+    // Función para actualizar el contador y verificar el estado del formulario
+    function verificarEstadoFormulario() {
+        const ahora = new Date();
+        
+        // Actualizar el texto de la fecha de cierre
+        const elementoFecha = document.querySelector('.deadline');
+        if (elementoFecha) {
+            elementoFecha.textContent = `Fecha de cierre: ${formatearFecha(fechaCierre)} (Hora Argentina)`;
+        }
+        
+        const formulario = document.getElementById('inscripcionForm');
+        if (!formulario) return;
+        
+        // VERIFICAR SI EL FORMULARIO AÚN NO SE ABRIÓ
+        if (ahora < fechaApertura) {
+            // Deshabilitar el formulario (aún no se abrió)
+            formulario.classList.add('form-disabled');
+            
+            // Deshabilitar todos los campos del formulario
+            const campos = formulario.querySelectorAll('input, select, button');
+            campos.forEach(campo => {
+                campo.disabled = true;
+            });
+
+            // Eliminar el botón de enviar si existe
+            const botonEnviar = formulario.querySelector('.submit-btn');
+            if (botonEnviar) {
+                botonEnviar.remove();
+            }
+            
+            // Mostrar mensaje de "aún no abierto" (solo si no existe ya)
+            if (!document.querySelector('.not-open-message')) {
+                const mensajeNoAbierto = document.createElement('div');
+                mensajeNoAbierto.className = 'not-open-message expired-message';
+                mensajeNoAbierto.textContent = `Fecha de apertura de la clase: ${formatearFecha(fechaApertura)}`;
+                formulario.parentNode.insertBefore(mensajeNoAbierto, formulario);
+            }
+            
+            return; // Salir de la función, no verificar el cierre
+        }
+        
+        // VERIFICAR SI EL FORMULARIO YA SE CERRÓ
+        const tiempoRestante = fechaCierre - ahora;
+        
+        if (tiempoRestante <= 0) {
+            // Deshabilitar el formulario (ya se cerró)
+            formulario.classList.add('form-disabled');
+            
+            // Deshabilitar todos los campos del formulario
+            const campos = formulario.querySelectorAll('input, select, button');
+            campos.forEach(campo => {
+                campo.disabled = true;
+            });
+
+            // Eliminar el botón de enviar si existe
+            const botonEnviar = formulario.querySelector('.submit-btn');
+            if (botonEnviar) {
+                botonEnviar.remove();
+            }
+            
+            // Remover mensaje de "no abierto" si existe
+            const mensajeNoAbierto = document.querySelector('.not-open-message');
+            if (mensajeNoAbierto) {
+                mensajeNoAbierto.remove();
+            }
+            
+            // Mostrar mensaje de cierre (solo si no existe ya)
+            if (!document.querySelector('.expired-message:not(.not-open-message)')) {
+                const mensajeCierre = document.createElement('div');
+                mensajeCierre.className = 'expired-message';
+                mensajeCierre.textContent = 'Se cerro la inscripcion de la clase.';
+                formulario.parentNode.insertBefore(mensajeCierre, formulario);
+            }
+            
+            // Detener la verificación periódica
+            clearInterval(intervaloVerificacion);
+        } else {
+            // El formulario está ABIERTO (entre apertura y cierre)
+            
+            // Remover mensajes si existen
+            const mensajeNoAbierto = document.querySelector('.not-open-message');
+            if (mensajeNoAbierto) {
+                mensajeNoAbierto.remove();
+            }
+            
+            const mensajeCierre = document.querySelector('.expired-message:not(.not-open-message)');
+            if (mensajeCierre) {
+                mensajeCierre.remove();
+            }
+            
+            // Asegurar que el formulario esté habilitado
+            formulario.classList.remove('form-disabled');
+            
+            const campos = formulario.querySelectorAll('input, select, button');
+            campos.forEach(campo => {
+                campo.disabled = false;
+            });
+            
+            // Asegurar que el botón de enviar exista
+            if (!formulario.querySelector('.submit-btn')) {
+                const botonEnviar = document.createElement('button');
+                botonEnviar.type = 'submit';
+                botonEnviar.className = 'submit-btn';
+                botonEnviar.textContent = 'Ingresar a la clase';
+                formulario.appendChild(botonEnviar);
+            }
+        }
+    }
+    
+    // Ejecutar la verificación inmediatamente y luego cada minuto
+    verificarEstadoFormulario();
+    const intervaloVerificacion = setInterval(verificarEstadoFormulario, 60000); // Verificar cada minuto
+</script>
+</body>
+</html>

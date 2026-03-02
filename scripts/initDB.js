@@ -70,62 +70,6 @@ if (!clasesHistoricasExists) {
     await db.collection('clases').createIndex({ fechaClase: -1 });
     await db.collection('clases').createIndex({ nombre: 1 });
     
-    // Insertar algunas clases de ejemplo
-    const clasesEjemplo = [
-        {
-            nombre: "Telemetría Avanzada",
-            descripcion: "Clase grabada sobre monitoreo cardíaco y telemetría",
-            fechaClase: new Date('2026-02-10'),
-            enlaces: {
-                youtube: "https://www.youtube.com/watch?v=telemetria2026",
-                powerpoint: "https://docs.google.com/presentation/d/1-telemetria"
-            },
-            fechaCreacion: new Date()
-        },
-        {
-            nombre: "Rotación de Personal en Salud",
-            descripcion: "Estrategias y mejores prácticas para rotación de personal",
-            fechaClase: new Date('2026-02-11'),
-            enlaces: {
-                youtube: "https://www.youtube.com/watch?v=rotacion2026",
-                powerpoint: "https://docs.google.com/presentation/d/1-rotacion"
-            },
-            fechaCreacion: new Date()
-        },
-        {
-            nombre: "Gestión de Ausentismo",
-            descripcion: "Manejo y prevención del ausentismo laboral",
-            fechaClase: new Date('2026-02-19'),
-            enlaces: {
-                youtube: "https://www.youtube.com/watch?v=ausentismo2026",
-                powerpoint: "https://docs.google.com/presentation/d/1-ausentismo"
-            },
-            fechaCreacion: new Date()
-        },
-        {
-            nombre: "Stroke / IAM - Protocolos de Emergencia",
-            descripcion: "Actualización en manejo de ACV e Infarto",
-            fechaClase: new Date('2026-02-24'),
-            enlaces: {
-                youtube: "https://www.youtube.com/watch?v=stroke2026",
-                powerpoint: "https://docs.google.com/presentation/d/1-stroke"
-            },
-            fechaCreacion: new Date()
-        },
-        {
-            nombre: "CoPaP - Cuidados Paliativos",
-            descripcion: "Abordaje integral en cuidados paliativos",
-            fechaClase: new Date('2026-02-25'),
-            enlaces: {
-                youtube: "https://www.youtube.com/watch?v=copap2026",
-                powerpoint: "https://docs.google.com/presentation/d/1-copap"
-            },
-            fechaCreacion: new Date()
-        }
-    ];
-    
-    await db.collection('clases').insertMany(clasesEjemplo);
-    console.log('✅ Clases de ejemplo insertadas');
 } else {
     console.log('✅ Colección "clases" ya existe');
 }
