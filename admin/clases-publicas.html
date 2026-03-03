@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Clases Públicas - Panel Admin</title>
+    <link rel="stylesheet" href="/css/admin/admin.css">
+    <link rel="stylesheet" href="/css/admin/clases-publicas.css">
+</head>
+<body>
+    <div class="section-container">
+        <!-- Estadísticas -->
+        <div class="stats-grid">
+            <div class="stat-mini-card">
+                <div class="stat-label">Total Clases</div>
+                <div class="stat-value" id="totalClases">0</div>
+            </div>
+            <div class="stat-mini-card">
+                <div class="stat-label">Publicadas</div>
+                <div class="stat-value" id="clasesPublicadas">0</div>
+            </div>
+            <div class="stat-mini-card">
+                <div class="stat-label">No Publicadas</div>
+                <div class="stat-value" id="clasesNoPublicadas">0</div>
+            </div>
+            <div class="stat-mini-card">
+                <div class="stat-label">Con Formulario</div>
+                <div class="stat-value" id="clasesConFormulario">0</div>
+            </div>
+        </div>
+
+        <!-- Panel de creación/edición -->
+        <div class="form-panel">
+            <div class="form-header">
+                <h3 id="formTitle">➕ Agregar Nueva Clase Pública</h3>
+                <button id="cancelEditBtn" class="btn btn-secondary btn-small" style="display: none;">❌ Cancelar edición</button>
+            </div>
+            
+            <form id="claseForm" class="clase-form">
+                <div id="formMessage" class="message" style="display: none;"></div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Nombre de la Clase <span class="required">*</span></label>
+                        <input type="text" id="claseNombre" required class="form-control" placeholder="Ej: Gestión Administrativa e Indicadores">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Instructores</label>
+                        <input type="text" id="claseInstructores" placeholder="Lic. Rosa Monzón, Sec. Florencia Alvarez" class="form-control">
+                        <small class="field-info">Separar por comas si hay múltiples instructores</small>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Fecha <span class="required">*</span></label>
+                        <input type="date" id="claseFecha" required class="form-control">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Hora</label>
+                        <input type="time" id="claseHora" value="10:00" class="form-control" step="60">
+                        <small class="field-info">Formato 24 horas (ej: 14:30 para 2:30 PM)</small>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Descripción</label>
+                    <textarea id="claseDescripcion" rows="2" class="form-control" placeholder="Breve descripción de la clase..."></textarea>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Lugar / Modalidad</label>
+                        <input type="text" id="claseLugar" class="form-control" placeholder="Ej: Aula 101 / Virtual / Híbrida">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Enlace al Formulario</label>
+                        <input type="url" id="claseEnlaceFormulario" class="form-control" placeholder="https://...">
+                        <small class="field-info">URL del formulario de inscripción</small>
+                    </div>
+                </div>
+                
+                <!-- Visibilidad de la clase -->
+                <div class="form-group">
+                    <label>Visibilidad en página principal <span class="required">*</span></label>
+                    <div class="visibilidad-selector">
+                        <div class="visibilidad-opciones">
+                            <label class="visibilidad-opcion">
+                                <input type="radio" name="visibilidad" value="true">
+                                <span>✅ Publicada - Visible para todos los usuarios</span>
+                            </label>
+                            <label class="visibilidad-opcion">
+                                <input type="radio" name="visibilidad" value="false" checked>
+                                <span>⏸️ No publicada - Solo visible en panel admin</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-actions">
+                    <div class="action-buttons">
+                        <button type="submit" class="btn btn-success" id="submitClaseBtn">💾 Guardar Clase</button>
+                        <button type="button" id="limpiarFormBtn" class="btn btn-secondary">🗑️ Limpiar</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Lista de clases -->
+        <div class="table-container">
+            <div class="list-header">
+                <h2>📋 Clases Públicas Existentes</h2>
+                <div class="list-actions">
+                    <select id="filtroVisibilidad" class="filtro-select">
+                        <option value="todas">Todas las clases</option>
+                        <option value="publicadas">✅ Publicadas</option>
+                        <option value="no-publicadas">⏸️ No publicadas</option>
+                    </select>
+                    <input type="text" id="buscarClase" placeholder="🔍 Buscar clase..." class="search-input">
+                    <button id="refrescarClasesBtn" class="btn btn-primary">🔄 Refrescar</button>
+                </div>
+            </div>
+            
+            <div id="clasesList" class="clases-list">
+                <!-- Las clases se cargan aquí -->
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/auth.js"></script>
+    <script src="/js/admin/admin-core.js"></script>
+    <script src="/js/admin/clases-publicas.js"></script>
+</body>
+</html>

@@ -47,48 +47,11 @@
         </header>
 
         <div class="main-layout">
-            <!-- Columna izquierda: Clases principales -->
+            <!-- Columna izquierda: Clases principales (ahora dinámicas) -->
             <div class="left-column">
-                <div class="classes-grid">
-
-                    <div class="class-card" onclick="window.location.href='/Registro/index.html'">
-                        <h3>Registro Informatizado y Auditoría</h3>
-                        <p>Lic. Walter Rolón.</p>
-                        <span class="class-date">Clase dia 05/03/2026</span>
-                    </div>
-
-                    <div class="class-card" onclick="window.location.href='/Gestion/index.html'">
-                        <h3>Gestión Administrativa e Indicadores</h3>
-                        <p>Lic. Rosa Monzón <br>
-                        Sec. Florencia Alvarez.</p>
-                        <span class="class-date">Clase dia 12/03/2026</span>
-                    </div>
-
-                    <div class="class-card" onclick="window.location.href='/Aspectos/index.html'">
-                        <h3>Aspectos legales de la Práctica Profesional</h3>
-                        <p>Lic. Walter Rolón<br>
-                        Lic. Elena Rastenes.</p>
-                        <span class="class-date">Clase dia 19/03/2026</span>
-                    </div>
-
-                    <div class="class-card" onclick="window.location.href='/Gestion-cuidados/index.html'">
-                        <h3>Gestión de Cuidados de Piel</h3>
-                        <p>Lic. Yesica Ceballos <br>
-                        Lic. Analía Garay.</p>
-                        <span class="class-date">Clase dia 25/03/2026</span>
-                    </div>
-
-                    <div class="class-card" onclick="window.location.href='/Gestion-vacaciones/index.html'">
-                        <h3>Gestión de Vacaciones</h3>
-                        <p>Lic. Yesica Ceballos <br>
-                        Lic. Analía Garay.</p>
-                        <span class="class-date">Clase dia 01/04/2026</span>
-                    </div>
-
-                    <div class="class-card" onclick="window.location.href='/solicitud-material.html'">
-                        <h3>Solicitud material de clases.</h3>
-                        <p>Por este medio solo podras solicitar material de clase, no es valido como formulario de asistencia</p>
-                    </div>
+                <div class="classes-grid" id="dynamic-classes-grid">
+                    <!-- Las tarjetas se cargarán dinámicamente aquí -->
+                    <div class="loading-classes">Cargando clases disponibles...</div>
                 </div>
 
                 <!-- Sección de Video -->
@@ -309,6 +272,91 @@
     <script src="/js/auth.js"></script>
     <script src="/js/profile-updater.js"></script>
     <script src="/js/calendar.js"></script>
+    
+    <!-- Script para carga dinámica de clases -->
+    <script>
+        // Función para cargar las clases publicadas desde la API
+        async function cargarClasesPublicas() {
+            const gridContainer = document.getElementById('dynamic-classes-grid');
+            if (!gridContainer) return;
+
+            // Mostrar mensaje de carga
+            gridContainer.innerHTML = '<div class="loading-classes">Cargando clases disponibles...</div>';
+
+            try {
+                // 1. Hacer la petición al endpoint de clases publicadas
+                const response = await fetch('/api/clases-publicas/publicadas');
+                const result = await response.json();
+
+                if (!result.success || !result.data) {
+                    throw new Error(result.message || 'Error al cargar las clases');
+                }
+
+                const clases = result.data;
+
+                // 2. Si no hay clases, mostrar un mensaje
+                if (clases.length === 0) {
+                    gridContainer.innerHTML = '<div class="no-classes-message">No hay clases publicadas en este momento.</div>';
+                    return;
+                }
+
+                // 3. Generar el HTML para cada clase
+                let htmlString = '';
+                clases.forEach(clase => {
+                    // Formatear la fecha
+                    let fechaFormateada = 'Fecha no disponible';
+                    if (clase.fechaClase) {
+                        const fecha = new Date(clase.fechaClase);
+                        fechaFormateada = fecha.toLocaleDateString('es-AR', {
+                            day: '2-digit',
+                            month: '2-digit',
+                            year: 'numeric'
+                        });
+                    }
+
+                    // Formatear el texto de los instructores
+                    let instructoresTexto = 'Instructor no especificado';
+                    if (clase.instructores && clase.instructores.length > 0) {
+                        instructoresTexto = clase.instructores.join('<br>');
+                    }
+
+                    // Determinar la URL del formulario (si existe)
+                    const urlFormulario = clase.enlaceFormulario || '#';
+                    
+                    // Si no hay enlace, la tarjeta no será clickeable
+                    const onclickAttr = clase.enlaceFormulario ? 
+                        `onclick="window.location.href='${clase.enlaceFormulario}'"` : 
+                        '';
+
+                    htmlString += `
+                        <div class="class-card" ${onclickAttr}>
+                            <h3>${clase.nombre}</h3>
+                            <p>${instructoresTexto}</p>
+                            ${clase.lugar ? `<p><small class="class-lugar">${clase.lugar}</small></p>` : ''}
+                            <span class="class-date">Clase día ${fechaFormateada}</span>
+                        </div>
+                    `;
+                });
+
+                gridContainer.innerHTML = htmlString;
+
+            } catch (error) {
+                console.error('❌ Error cargando clases:', error);
+                gridContainer.innerHTML = '<div class="error-message">Error al cargar las clases. Por favor, recargue la página.</div>';
+            }
+        }
+
+        // Cargar clases cuando el DOM esté listo
+        document.addEventListener('DOMContentLoaded', function() {
+            cargarClasesPublicas();
+        });
+
+        // También recargar cuando el usuario inicia sesión (por si cambian las clases)
+        document.addEventListener('userLoggedIn', function() {
+            cargarClasesPublicas();
+        });
+    </script>
+
     <script>
         alert("Esta es una versión BETA del sistema de inscripciones. Puede contener errores o funcionalidades incompletas. Por favor, utilícelo con precaución y reporte cualquier problema al desarrollador.");
     </script>

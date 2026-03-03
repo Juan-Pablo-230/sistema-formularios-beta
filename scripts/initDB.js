@@ -90,4 +90,19 @@ if (!materialHistoricoExists) {
 }
 }
 
+// Verificar/crear colección de clases públicas
+const clasesPublicasExists = await db.listCollections({ name: 'clases-publicas' }).hasNext();
+if (!clasesPublicasExists) {
+    console.log('📝 Creando colección "clases-publicas"...');
+    await db.createCollection('clases-publicas');
+    
+    await db.collection('clases-publicas').createIndex({ fechaClase: -1 });
+    await db.collection('clases-publicas').createIndex({ nombre: 1 });
+    await db.collection('clases-publicas').createIndex({ publicada: 1 });
+    
+    console.log('✅ Colección "clases-publicas" creada con índices');
+} else {
+    console.log('✅ Colección "clases-publicas" ya existe');
+}
+
 initializeDatabase();
