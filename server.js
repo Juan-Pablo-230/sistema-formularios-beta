@@ -1697,6 +1697,46 @@ app.put('/api/clases-publicas/:id/visibilidad', async (req, res) => {
     }
 });
 
+// Obtener una clase pública por ID
+app.get('/api/clases-publicas/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        console.log(`📥 GET /api/clases-publicas/${id}`);
+        
+        // Validar que el ID sea válido para MongoDB
+        if (!ObjectId.isValid(id)) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'ID de clase inválido' 
+            });
+        }
+        
+        const db = await mongoDB.getDatabaseSafe('formulario');
+        
+        const clase = await db.collection('clases-publicas').findOne({ 
+            _id: new ObjectId(id) 
+        });
+        
+        if (!clase) {
+            return res.status(404).json({ 
+                success: false, 
+                message: 'Clase no encontrada' 
+            });
+        }
+        
+        // No enviar campos internos si existen
+        res.json({ success: true, data: clase });
+        
+    } catch (error) {
+        console.error('❌ Error obteniendo clase por ID:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Error interno del servidor',
+            error: error.message 
+        });
+    }
+});
+
 // Eliminar clase pública
 app.delete('/api/clases-publicas/:id', async (req, res) => {
     try {
