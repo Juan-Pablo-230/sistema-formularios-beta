@@ -74,243 +74,250 @@
 
     <script src="/js/auth.js"></script>
     <script src="/js/formularios.js"></script>
-    <script>
-        // Obtener claseId de la URL
-        const urlParams = new URLSearchParams(window.location.search);
-        const claseId = urlParams.get('id');
-        
-        if (!claseId) {
-            alert('Error: No se especificó la clase');
-            window.location.href = '/index.html';
-        }
-        
-        // Guardar claseId globalmente
-        window.CLASE_ID = claseId;
-        
-        // Función para cargar datos de la clase
-        async function cargarDatosClase() {
-            try {
-                console.log('📥 Cargando datos de la clase:', claseId);
-                
-                document.getElementById('claseTitulo').textContent = 'Cargando información de la clase...';
-                
-                const response = await fetch(`/api/clases-publicas/${claseId}`);
-                const result = await response.json();
-                
-                if (result.success && result.data) {
-                    const clase = result.data;
-                    console.log('✅ Clase cargada:', clase);
-                    
-                    // Actualizar título
-                    document.getElementById('claseTitulo').textContent = `Clase "${clase.nombre}"`;
-                    
-                    // Actualizar indicador visible
-                    document.getElementById('claseIndicador').style.display = 'block';
-                    document.getElementById('claseNombre').textContent = clase.nombre;
-                    
-                    // Agregar detalles al indicador
-                    const detallesDiv = document.getElementById('claseDetalles');
-                    let detallesHTML = '';
-                    
-                    if (clase.instructores && clase.instructores.length > 0) {
-                        detallesHTML += `<span><i>👥</i> ${clase.instructores.join(', ')}</span>`;
-                    }
-                    
-                    if (clase.lugar) {
-                        detallesHTML += `<span><i>📍</i> ${clase.lugar}</span>`;
-                    }
-                    
-                    if (clase.fechaClase) {
-                        const fecha = new Date(clase.fechaClase);
-                        const fechaFormateada = fecha.toLocaleDateString('es-AR', {
-                            day: '2-digit',
-                            month: '2-digit',
-                            year: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                            hour12: false
-                        });
-                        detallesHTML += `<span><i>📅</i> ${fechaFormateada}hs</span>`;
-                    }
-                    
-                    detallesDiv.innerHTML = detallesHTML;
-                    
-                    // Actualizar campos ocultos
-                    document.getElementById('claseId').value = claseId;
-                    document.getElementById('claseHidden').value = clase.nombre;
 
-                    // Al cargar la clase, guardar el enlace de redirección
-                    if (clase.enlaceFormulario) {
-                        document.getElementById('enlaceRedireccion').value = clase.enlaceFormulario;
-                    } else {
-                        // Si no hay enlace específico, usar uno por defecto
-                        document.getElementById('enlaceRedireccion').value = '/asistenciapres.html';
-                    }
-                    
-                    // Actualizar selector de clase
-                    const claseOption = document.getElementById('claseOption');
-                    claseOption.value = clase.nombre;
-                    claseOption.textContent = clase.nombre;
-                    
-                    // Configurar fechas
-                    configurarFechasClase(clase);
-                    
-                } else {
-                    throw new Error('No se pudo cargar la información de la clase');
-                }
-                
-            } catch (error) {
-                console.error('❌ Error cargando clase:', error);
-                document.getElementById('claseTitulo').textContent = 'Error al cargar la clase';
-                alert('Error al cargar la información de la clase. Por favor, vuelva al inicio.');
+    <script>
+    // Prevenir que formularios.js agregue su propio manejador
+    window.DESACTIVAR_MANEJADOR_FORMULARIO = true;
+    
+    // Obtener claseId de la URL - CORREGIDO
+    const urlParams = new URLSearchParams(window.location.search);
+    const claseId = urlParams.get('claseId'); // Ahora busca 'claseId'
+    
+    console.log('🔍 URL completa:', window.location.href);
+    console.log('🔍 claseId obtenido:', claseId);
+    
+    if (!claseId) {
+        alert('Error: No se especificó la clase');
+        window.location.href = '/index.html';
+    }
+    
+    // Guardar claseId globalmente
+    window.CLASE_ID = claseId;
+    
+    // Función para cargar datos de la clase
+    async function cargarDatosClase() {
+        try {
+            console.log('📥 Cargando datos de la clase ID:', claseId);
+            
+            document.getElementById('claseTitulo').textContent = 'Cargando información de la clase...';
+            
+            const url = `/api/clases-publicas/${claseId}`;
+            console.log('📡 Fetching URL:', url);
+            
+            const response = await fetch(url);
+            console.log('📡 Response status:', response.status);
+            
+            if (!response.ok) {
+                throw new Error(`Error HTTP: ${response.status}`);
             }
-        }
-        
-        // Función para configurar fechas de apertura y cierre
-        function configurarFechasClase(clase) {
-            if (clase.fechaApertura && clase.fechaCierre) {
-                window.FECHA_APERTURA = new Date(clase.fechaApertura);
-                window.FECHA_CIERRE = new Date(clase.fechaCierre);
+            
+            const result = await response.json();
+            console.log('📦 Datos recibidos:', result);
+            
+            if (!result.success || !result.data) {
+                throw new Error(result.message || 'Error al cargar la clase');
+            }
+            
+            const clase = result.data;
+            console.log('✅ Clase cargada:', clase);
+            
+            // Actualizar título
+            document.getElementById('claseTitulo').textContent = `Clase "${clase.nombre}"`;
+            
+            // Actualizar indicador visible
+            document.getElementById('claseIndicador').style.display = 'block';
+            document.getElementById('claseNombre').textContent = clase.nombre;
+            
+            // Agregar detalles al indicador
+            const detallesDiv = document.getElementById('claseDetalles');
+            let detallesHTML = '';
+            
+            if (clase.instructores && clase.instructores.length > 0) {
+                detallesHTML += `<span><i>👥</i> ${clase.instructores.join(', ')}</span>`;
+            }
+            
+            if (clase.lugar) {
+                detallesHTML += `<span><i>📍</i> ${clase.lugar}</span>`;
+            }
+            
+            if (clase.fechaClase) {
+                const fecha = new Date(clase.fechaClase);
+                const fechaFormateada = fecha.toLocaleDateString('es-AR', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: false
+                });
+                detallesHTML += `<span><i>📅</i> ${fechaFormateada}hs</span>`;
+            }
+            
+            detallesDiv.innerHTML = detallesHTML;
+            
+            // Actualizar campos ocultos
+            document.getElementById('claseId').value = claseId;
+            document.getElementById('claseHidden').value = clase.nombre;
+            
+            // Guardar enlace de redirección
+            if (clase.enlaceFormulario) {
+                document.getElementById('enlaceRedireccion').value = clase.enlaceFormulario;
+                console.log('🔗 Enlace de redirección:', clase.enlaceFormulario);
             } else {
-                const fechaClase = new Date(clase.fechaClase);
-                
-                window.FECHA_APERTURA = new Date(fechaClase);
-                window.FECHA_APERTURA.setHours(9, 50, 0, 0);
-                
-                window.FECHA_CIERRE = new Date(fechaClase);
-                window.FECHA_CIERRE.setHours(11, 0, 0, 0);
+                document.getElementById('enlaceRedireccion').value = '/asistenciapres.html';
+                console.log('🔗 Usando enlace por defecto');
             }
             
-            console.log('⏰ Fechas configuradas:', {
-                apertura: window.FECHA_APERTURA,
-                cierre: window.FECHA_CIERRE
+            // Actualizar selector de clase
+            const claseOption = document.getElementById('claseOption');
+            claseOption.value = clase.nombre;
+            claseOption.textContent = clase.nombre;
+            
+            // Autocompletar datos del usuario
+            autocompletarDatosUsuario();
+            
+        } catch (error) {
+            console.error('❌ Error cargando clase:', error);
+            document.getElementById('claseTitulo').textContent = 'Error al cargar la clase';
+            
+            // Mostrar error más descriptivo
+            const indicador = document.getElementById('claseIndicador');
+            if (indicador) {
+                indicador.style.display = 'block';
+                indicador.innerHTML = `
+                    <strong style="color: #dc3545;">❌ Error</strong>
+                    <div style="margin-top: 10px; color: var(--text-secondary);">
+                        ${error.message}<br>
+                        <small>URL intentada: /api/clases-publicas/${claseId}</small>
+                    </div>
+                `;
+            }
+        }
+    }
+    
+    // Función para autocompletar datos del usuario
+    function autocompletarDatosUsuario() {
+        if (authSystem && authSystem.isLoggedIn && authSystem.isLoggedIn()) {
+            const user = authSystem.getCurrentUser();
+            console.log('👤 Usuario logueado:', user);
+            
+            if (user.apellidoNombre) {
+                document.getElementById('apellidoNombre').value = user.apellidoNombre;
+            }
+            if (user.legajo) {
+                document.getElementById('legajo').value = user.legajo;
+            }
+            if (user.turno) {
+                document.getElementById('turno').value = user.turno;
+            }
+            if (user.email) {
+                document.getElementById('email').value = user.email;
+            }
+        }
+    }
+    
+    // Función para manejar el envío del formulario
+    async function manejarEnvioFormulario(event) {
+        event.preventDefault();
+        console.log('📤 Enviando formulario...');
+        
+        const submitBtn = document.getElementById('submitBtn');
+        const textoOriginal = submitBtn.textContent;
+        
+        try {
+            if (!authSystem.isLoggedIn()) {
+                alert('Debe iniciar sesión');
+                window.location.href = '/index.html';
+                return;
+            }
+            
+            const usuario = authSystem.getCurrentUser();
+            const claseActual = document.getElementById('claseHidden').value;
+            const turno = document.getElementById('turno').value;
+            
+            console.log('📦 Datos del formulario:', {
+                usuarioId: usuario._id,
+                clase: claseActual,
+                turno: turno
             });
             
-            actualizarTextoFecha();
-        }
-        
-        // Función para formatear fecha
-        function formatearFecha(fecha) {
-            const opciones = { 
-                day: '2-digit', 
-                month: '2-digit', 
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: false
+            if (!claseActual || !turno) {
+                alert('Error: Faltan datos de la clase');
+                return;
+            }
+            
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Procesando...';
+            
+            const inscripcionData = {
+                usuarioId: usuario._id,
+                clase: claseActual,
+                turno: turno,
+                fecha: new Date().toISOString()
             };
-            return fecha.toLocaleDateString('es-AR', opciones).replace(',', ' a las') + 'hs';
-        }
-        
-        // Función para actualizar texto de fecha
-        function actualizarTextoFecha() {
-            const elementoFecha = document.getElementById('deadline');
-            if (elementoFecha && window.FECHA_CIERRE) {
-                elementoFecha.textContent = `Fecha de cierre: ${formatearFecha(window.FECHA_CIERRE)} (Hora Argentina)`;
-            }
-        }
-        
-        // Sobrescribir función obtenerClaseActual
-        function obtenerClaseActual() {
-            return document.getElementById('claseHidden')?.value || 
-                   document.getElementById('clase')?.value || 
-                   null;
-        }
-        
-        // Sobrescribir función obtenerEnlaceRedireccion
-        function obtenerEnlaceRedireccion() {
-            return document.getElementById('enlaceRedireccion')?.value || '/asistenciapres.html';
-        }
-        
-        // Modificar el envío del formulario
-        async function manejarEnvioFormulario(event) {
-            event.preventDefault();
             
-            const submitBtn = document.getElementById('submitBtn');
-            const textoOriginal = submitBtn.textContent;
+            console.log('📡 Enviando a /api/inscripciones:', inscripcionData);
             
-            try {
-                // Verificar si el usuario está logueado
-                if (!authSystem.isLoggedIn()) {
-                    alert('Debe iniciar sesión para continuar');
-                    window.location.href = '/index.html';
-                    return;
-                }
-                
-                const usuario = authSystem.getCurrentUser();
-                const claseActual = obtenerClaseActual();
-                const turno = document.getElementById('turno').value;
-                
-                if (!claseActual || !turno) {
-                    alert('Error: Faltan datos de la clase');
-                    return;
-                }
-                
-                // Deshabilitar botón
-                submitBtn.disabled = true;
-                submitBtn.textContent = 'Procesando...';
-                
-                // Guardar inscripción en MongoDB
-                const inscripcionData = {
-                    usuarioId: usuario._id,
-                    clase: claseActual,
-                    turno: turno,
-                    fecha: new Date().toISOString()
-                };
-                
-                const result = await authSystem.makeRequest('/inscripciones', inscripcionData);
-                
-                if (result.success) {
-                    console.log('✅ Inscripción guardada');
-                    
-                    // Obtener enlace de redirección
-                    const enlaceRedireccion = obtenerEnlaceRedireccion();
-                    
-                    // Redirigir
-                    window.location.href = enlaceRedireccion;
-                } else {
-                    throw new Error(result.message || 'Error al guardar la inscripción');
-                }
-                
-            } catch (error) {
-                console.error('❌ Error en el envío:', error);
-                alert('Error al procesar la inscripción: ' + error.message);
-                
-                submitBtn.disabled = false;
-                submitBtn.textContent = textoOriginal;
-            }
-        }
-        
-        // Hacer campos readonly
-        function hacerCamposReadonly() {
-            const campos = ['apellidoNombre', 'legajo', 'email'];
-            campos.forEach(id => {
-                const campo = document.getElementById(id);
-                if (campo) {
-                    campo.setAttribute('readonly', true);
-                }
+            const response = await fetch('/api/inscripciones', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'user-id': usuario._id
+                },
+                body: JSON.stringify(inscripcionData)
             });
             
-            const selects = ['clase', 'turno'];
-            selects.forEach(id => {
-                const select = document.getElementById(id);
-                if (select) {
-                    select.setAttribute('readonly', true);
-                }
-            });
+            console.log('📡 Response status:', response.status);
+            
+            const result = await response.json();
+            console.log('📦 Respuesta:', result);
+            
+            if (result.success) {
+                console.log('✅ Inscripción exitosa');
+                const enlaceRedireccion = document.getElementById('enlaceRedireccion').value;
+                console.log('🔗 Redirigiendo a:', enlaceRedireccion);
+                window.location.href = enlaceRedireccion;
+            } else {
+                throw new Error(result.message || 'Error al guardar la inscripción');
+            }
+            
+        } catch (error) {
+            console.error('❌ Error en el envío:', error);
+            alert('Error: ' + error.message);
+            submitBtn.disabled = false;
+            submitBtn.textContent = textoOriginal;
         }
+    }
+    
+    // Hacer campos readonly
+    function hacerCamposReadonly() {
+        const campos = ['apellidoNombre', 'legajo', 'email'];
+        campos.forEach(id => {
+            const campo = document.getElementById(id);
+            if (campo) campo.setAttribute('readonly', true);
+        });
         
-        // Inicializar
+        const selects = ['clase', 'turno'];
+        selects.forEach(id => {
+            const select = document.getElementById(id);
+            if (select) select.setAttribute('readonly', true);
+        });
+    }
+    
+    // Inicializar
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('📄 Inicializando formulario...');
         hacerCamposReadonly();
         cargarDatosClase();
         
-        // Exponer funciones globales
-        window.obtenerClaseActual = obtenerClaseActual;
-        window.obtenerEnlaceRedireccion = obtenerEnlaceRedireccion;
-        
-        // Configurar evento de envío
-        document.getElementById('inscripcionForm').addEventListener('submit', manejarEnvioFormulario);
-        
-    </script>
+        const form = document.getElementById('inscripcionForm');
+        form.addEventListener('submit', manejarEnvioFormulario);
+    });
+    
+    window.obtenerClaseActual = function() {
+        return document.getElementById('claseHidden').value;
+    };
+</script>
+
 </body>
 </html>
