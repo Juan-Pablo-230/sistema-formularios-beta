@@ -112,6 +112,9 @@ body {
     line-height: 1.5;
 }
 
+/* Alerta para la versión beta con opción de cierre */
+/* Eliminar al enviar a version oficial */
+
 .beta-banner .close-banner {
     position: absolute;
     right: 15px;
@@ -141,6 +144,8 @@ body {
         opacity: 1;
     }
 }
+
+/* Fin alerta de version beta */
 
 .main-header {
     background: var(--gradient-secondary);
