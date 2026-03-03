@@ -273,7 +273,7 @@
     <script src="/js/profile-updater.js"></script>
     <script src="/js/calendar.js"></script>
 
-    <!-- Script para carga dinámica de clases - CON ORDENAMIENTO Y AUTO-OCULTAMIENTO -->
+    <!-- Script para carga dinámica de clases - CON SOPORTE PARA formularios.html -->
 <script>
     // Variable para evitar múltiples cargas
     let clasesCargadas = false;
@@ -315,7 +315,7 @@
         return clases.sort((a, b) => {
             const fechaA = new Date(a.fechaClase);
             const fechaB = new Date(b.fechaClase);
-            return fechaA - fechaB; // Orden ascendente (más próxima primero)
+            return fechaA - fechaB;
         });
     }
 
@@ -324,13 +324,11 @@
         const gridContainer = document.getElementById('dynamic-classes-grid');
         if (!gridContainer) return;
 
-        // Si ya cargamos y no forzamos, no hacer nada
         if (clasesCargadas && !forzar) {
             console.log('ℹ️ Clases ya cargadas previamente, omitiendo...');
             return;
         }
 
-        // Cancelar timeout pendiente
         if (timeoutCarga) {
             clearTimeout(timeoutCarga);
         }
@@ -369,25 +367,18 @@
             // Ordenar clases por fecha (más próximas primero)
             const clasesOrdenadas = ordenarClasesPorFecha(clasesVisibles);
 
-            // Generar HTML
+            // Generar HTML - ¡ESTA ES LA PARTE IMPORTANTE!
             let htmlString = '';
             clasesOrdenadas.forEach(clase => {
                 let fechaFormateada = 'Fecha no disponible';
-                let fechaCompleta = null;
                 
                 if (clase.fechaClase) {
                     const fecha = new Date(clase.fechaClase);
-                    fechaCompleta = fecha;
                     fechaFormateada = fecha.toLocaleDateString('es-AR', {
                         day: '2-digit',
                         month: '2-digit',
                         year: 'numeric'
                     });
-                    
-                    // Agregar hora si está disponible
-                    if (fecha.getHours() !== 0 || fecha.getMinutes() !== 0) {
-                        fechaFormateada += ` ${fecha.getHours().toString().padStart(2, '0')}:${fecha.getMinutes().toString().padStart(2, '0')}hs`;
-                    }
                 }
 
                 let instructoresTexto = 'Instructor no especificado';
@@ -395,13 +386,11 @@
                     instructoresTexto = clase.instructores.join('<br>');
                 }
 
-                const urlFormulario = clase.enlaceFormulario || '#';
-                const onclickAttr = clase.enlaceFormulario ? 
-                    `onclick="window.location.href='${clase.enlaceFormulario}'"` : 
-                    '';
-
+                // 🔥 CAMBIO IMPORTANTE: Ahora apuntamos a formularios.html con el ID
+                const urlFormulario = `/formularios.html?id=${clase._id}`;
+                
                 htmlString += `
-                    <div class="class-card" ${onclickAttr} data-fecha="${clase.fechaClase}">
+                    <div class="class-card" onclick="window.location.href='${urlFormulario}'">
                         <h3>${clase.nombre}</h3>
                         <p>${instructoresTexto}</p>
                         ${clase.lugar ? `<p><small class="class-lugar">📍 ${clase.lugar}</small></p>` : ''}
@@ -429,37 +418,35 @@
         let algunaOculta = false;
         
         clases.forEach(clase => {
-            const fechaAttr = clase.getAttribute('data-fecha');
-            if (fechaAttr) {
-                if (!claseDebeMostrarse(fechaAttr)) {
-                    clase.style.display = 'none';
+            const onclickAttr = clase.getAttribute('onclick');
+            if (onclickAttr) {
+                // Extraer el ID de la URL
+                const match = onclickAttr.match(/id=([a-f0-9]+)/);
+                if (match && match[1]) {
+                    // Aquí necesitarías tener la fecha almacenada de alguna manera
+                    // Por ahora, simplemente recargamos todas las clases
                     algunaOculta = true;
                 }
             }
         });
         
-        // Si se ocultaron todas las clases, mostrar mensaje
         if (algunaOculta) {
-            const clasesVisibles = document.querySelectorAll('.class-card[style="display: none;"]').length;
-            if (clasesVisibles === 0) {
-                gridContainer.innerHTML = '<div class="no-classes-message">No hay clases disponibles en este momento.</div>';
-            }
+            cargarClasesPublicas(true);
         }
     }
 
     // Cargar clases cuando el DOM esté listo
     document.addEventListener('DOMContentLoaded', function() {
         console.log('📄 DOM cargado, cargando clases...');
-        // Pequeño retraso para asegurar que todo esté listo
         timeoutCarga = setTimeout(() => {
             cargarClasesPublicas();
             
             // Configurar verificación periódica cada minuto
-            intervaloVerificacion = setInterval(verificarClasesExpiradas, 60000); // 60000ms = 1 minuto
+            intervaloVerificacion = setInterval(verificarClasesExpiradas, 60000);
         }, 100);
     });
 
-    // Escuchar evento de login pero con bandera para no recargar innecesariamente
+    // Escuchar evento de login
     document.addEventListener('userLoggedIn', function() {
         console.log('👤 Evento userLoggedIn detectado');
         setTimeout(() => {
@@ -467,13 +454,13 @@
         }, 500);
     });
 
-    // También escuchar cuando se cierra el modal de login
+    // Observar cambios en el DOM
     const observer = new MutationObserver(function(mutations) {
         mutations.forEach(function(mutation) {
             if (mutation.type === 'childList') {
                 const loginOverlay = document.querySelector('.login-overlay');
                 if (!loginOverlay && clasesCargadas) {
-                    console.log('🔍 Modal de login cerrado, verificando clases...');
+                    console.log('🔍 Modal de login cerrado');
                 }
             }
         });
