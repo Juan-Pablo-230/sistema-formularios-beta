@@ -432,9 +432,8 @@ class UsuariosManager {
         }
     }
 
-    // usuarios.js - Agregar este método dentro de la clase UsuariosManager
+// usuarios.js - Método exportarUsuariosCSV MEJORADO con ID
 
-// Método para exportar usuarios a CSV
 exportarUsuariosCSV() {
     try {
         if (this.data.length === 0) {
@@ -442,10 +441,11 @@ exportarUsuariosCSV() {
             return;
         }
 
-        console.log(`📥 Exportando ${this.data.length} usuarios a CSV...`);
+        console.log(`📥 Exportando ${this.data.length} usuarios a CSV con IDs...`);
 
-        // Definir headers del CSV
+        // Definir headers del CSV (AHORA INCLUYE ID)
         const headers = [
+            'ID (MongoDB)',
             'Apellido y Nombre',
             'Legajo',
             'Email',
@@ -471,32 +471,48 @@ exportarUsuariosCSV() {
             }
 
             // Formatear rol
-            const rolTexto = this.getRoleText(usuario.role);
+            const roles = {
+                'admin': 'Administrador',
+                'advanced': 'Usuario Avanzado',
+                'user': 'Usuario Estándar'
+            };
+            const rolTexto = roles[usuario.role] || 'Usuario Estándar';
+
+            // Escapar comillas en los campos de texto
+            const escapar = (texto) => {
+                if (!texto) return '""';
+                return `"${texto.replace(/"/g, '""')}"`;
+            };
 
             return [
-                `"${usuario.apellidoNombre || ''}"`,
-                `"${usuario.legajo || ''}"`,
-                `"${usuario.email || ''}"`,
-                `"${usuario.turno || ''}"`,
-                `"${rolTexto}"`,
-                `"${fechaRegistro}"`
+                escapar(usuario._id || ''),
+                escapar(usuario.apellidoNombre || ''),
+                escapar(usuario.legajo || ''),
+                escapar(usuario.email || ''),
+                escapar(usuario.turno || ''),
+                escapar(rolTexto),
+                escapar(fechaRegistro)
             ].join(',');
         });
 
-        // Crear contenido CSV
+        // Crear contenido CSV con BOM para UTF-8
         const csvContent = [
             headers.join(','),
             ...rows
         ].join('\n');
 
-        // Crear blob y descargar
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        // Agregar BOM para caracteres especiales
+        const blob = new Blob(['\uFEFF' + csvContent], { 
+            type: 'text/csv;charset=utf-8;' 
+        });
+        
         const link = document.createElement('a');
         const url = URL.createObjectURL(blob);
         
-        // Generar nombre de archivo con fecha
+        // Generar nombre de archivo con fecha y cantidad
         const fecha = new Date().toISOString().split('T')[0];
-        const nombreArchivo = `usuarios_${fecha}.csv`;
+        const hora = new Date().toTimeString().split(' ')[0].replace(/:/g, '-');
+        const nombreArchivo = `usuarios_${this.data.length}_registros_${fecha}_${hora}.csv`;
         
         link.setAttribute('href', url);
         link.setAttribute('download', nombreArchivo);
@@ -509,8 +525,24 @@ exportarUsuariosCSV() {
         // Limpiar URL
         setTimeout(() => URL.revokeObjectURL(url), 100);
 
-        // Mostrar mensaje de éxito
-        alert(`✅ ${this.data.length} usuarios exportados correctamente a ${nombreArchivo}`);
+        // Mostrar mensaje de éxito con detalles
+        const totalUsuarios = this.data.length;
+        const admins = this.data.filter(u => u.role === 'admin').length;
+        const avanzados = this.data.filter(u => u.role === 'advanced').length;
+        const estandar = this.data.filter(u => u.role === 'user' || !u.role).length;
+        
+        alert(
+            `✅ EXPORTACIÓN EXITOSA\n\n` +
+            `📁 Archivo: ${nombreArchivo}\n` +
+            `📊 Total usuarios: ${totalUsuarios}\n` +
+            `👑 Administradores: ${admins}\n` +
+            `⭐ Usuarios Avanzados: ${avanzados}\n` +
+            `👤 Usuarios Estándar: ${estandar}\n\n` +
+            `📋 El archivo incluye ID de MongoDB para cada usuario`
+        );
+
+        console.log(`✅ CSV generado: ${nombreArchivo}`);
+        console.log(`📊 Estadísticas: ${totalUsuarios} usuarios (${admins} admins, ${avanzados} avanzados, ${estandar} estándar)`);
 
     } catch (error) {
         console.error('❌ Error exportando usuarios:', error);
