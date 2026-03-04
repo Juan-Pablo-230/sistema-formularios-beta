@@ -1505,6 +1505,38 @@ app.get('/api/clases-publicas/publicadas', async (req, res) => {
     }
 });
 
+// Verificar inscripción por usuarioId y claseId
+app.get('/api/inscripciones/verificar/:usuarioId/:claseId', async (req, res) => {
+    try {
+        const { usuarioId, claseId } = req.params;
+        
+        console.log('🔍 Verificando inscripción por IDs:', { usuarioId, claseId });
+        
+        if (!ObjectId.isValid(usuarioId) || !ObjectId.isValid(claseId)) {
+            return res.json({ success: true, data: { exists: false } });
+        }
+        
+        const db = await mongoDB.getDatabaseSafe('formulario');
+        
+        const inscripcion = await db.collection('inscripciones').findOne({
+            usuarioId: new ObjectId(usuarioId),
+            claseId: new ObjectId(claseId)
+        });
+        
+        res.json({ 
+            success: true, 
+            data: { exists: !!inscripcion } 
+        });
+        
+    } catch (error) {
+        console.error('❌ Error verificando inscripción:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Error interno del servidor'
+        });
+    }
+});
+
 // Obtener una clase pública por ID (NECESARIO PARA formularios.js)
 app.get('/api/clases-publicas/:id', async (req, res) => {
     try {

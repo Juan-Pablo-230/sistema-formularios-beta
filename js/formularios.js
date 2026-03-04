@@ -98,47 +98,43 @@ async function cargarInformacionClase() {
         console.log('📡 Cargando información de clase:', claseId);
         document.getElementById('claseTitulo').textContent = 'Cargando información de la clase...';
         
-        const db = await mongoDB.getDatabaseSafe('formulario');
-        
-        // PRIMERO: Buscar en clases públicas
-        console.log('🔍 Buscando en clases públicas...');
+        // PRIMERO: Intentar cargar como clase pública
+        console.log('🔍 Intentando cargar como clase pública...');
         let clase = null;
+        let tipoClase = null;
         
         try {
-            clase = await db.collection('clases-publicas').findOne({ 
-                _id: new ObjectId(claseId) 
-            });
-            
-            if (clase) {
-                console.log('✅ Clase pública encontrada:', clase.nombre);
-                claseInfo = clase;
-                claseInfo.tipo = 'publica';
+            const response = await makeRequestSafe(`/clases-publicas/${claseId}`, null, 'GET');
+            if (response && response.success && response.data) {
+                clase = response.data;
+                tipoClase = 'publica';
+                console.log('✅ Clase pública cargada:', clase.nombre);
             }
         } catch (error) {
-            console.log('⚠️ No es una clase pública válida');
+            console.log('⚠️ No es una clase pública, intentando como clase de gestión...');
         }
         
-        // SEGUNDO: Si no se encontró, buscar en clases históricas
+        // SEGUNDO: Si no es pública, intentar como clase de gestión (histórica)
         if (!clase) {
-            console.log('🔍 Buscando en clases históricas...');
             try {
-                clase = await db.collection('clases').findOne({ 
-                    _id: new ObjectId(claseId) 
-                });
-                
-                if (clase) {
-                    console.log('✅ Clase histórica encontrada:', clase.nombre);
-                    claseInfo = clase;
-                    claseInfo.tipo = 'historica';
+                const response = await makeRequestSafe(`/clases-historicas/${claseId}`, null, 'GET');
+                if (response && response.success && response.data) {
+                    clase = response.data;
+                    tipoClase = 'historica';
+                    console.log('✅ Clase de gestión cargada:', clase.nombre);
                 }
             } catch (error) {
-                console.log('⚠️ No es una clase histórica válida');
+                console.log('⚠️ Tampoco es una clase de gestión');
             }
         }
         
+        // TERCERO: Si ninguna funcionó, mostrar error
         if (!clase) {
-            throw new Error('Clase no encontrada en ninguna colección');
+            throw new Error('No se pudo cargar la información de la clase');
         }
+        
+        claseInfo = clase;
+        claseInfo.tipo = tipoClase;
         
         // Actualizar título
         document.getElementById('claseTitulo').textContent = claseInfo.nombre || 'Clase sin nombre';
@@ -153,7 +149,7 @@ async function cargarInformacionClase() {
             claseNombre.textContent = claseInfo.nombre || 'Clase sin nombre';
             claseIndicador.style.display = 'block';
             
-            // Mostrar detalles adicionales según el tipo de clase
+            // Mostrar detalles adicionales
             if (claseDetalles) {
                 let detallesHTML = '';
                 
@@ -170,7 +166,7 @@ async function cargarInformacionClase() {
                     }
                 }
                 
-                // Lugar (solo para clases públicas)
+                // Lugar (para clases públicas)
                 if (claseInfo.lugar) {
                     detallesHTML += `<p><strong>Lugar:</strong> ${claseInfo.lugar}</p>`;
                 }
@@ -185,16 +181,22 @@ async function cargarInformacionClase() {
             
             // Actualizar deadline
             if (deadline && claseInfo.fechaClase) {
-                const fechaClase = new Date(claseInfo.fechaClase);
-                const fechaLimite = new Date(fechaClase);
-                fechaLimite.setHours(20, 0, 0, 0); // 20:00 hrs del día de la clase
-                
-                const hoy = new Date();
-                if (fechaLimite > hoy) {
-                    const diasRestantes = Math.ceil((fechaLimite - hoy) / (1000 * 60 * 60 * 24));
-                    deadline.innerHTML = `⏰ <strong>Fecha límite de inscripción:</strong> ${fechaLimite.toLocaleDateString('es-AR')} hasta las 20:00 hrs (${diasRestantes} días restantes)`;
-                } else {
-                    deadline.innerHTML = '⏰ <strong>Fecha límite de inscripción:</strong> Hoy hasta las 20:00 hrs';
+                try {
+                    const fechaClase = new Date(claseInfo.fechaClase);
+                    if (!isNaN(fechaClase.getTime())) {
+                        const fechaLimite = new Date(fechaClase);
+                        fechaLimite.setHours(20, 0, 0, 0); // 20:00 hrs del día de la clase
+                        
+                        const hoy = new Date();
+                        if (fechaLimite > hoy) {
+                            const diasRestantes = Math.ceil((fechaLimite - hoy) / (1000 * 60 * 60 * 24));
+                            deadline.innerHTML = `⏰ <strong>Fecha límite de inscripción:</strong> ${fechaLimite.toLocaleDateString('es-AR')} hasta las 20:00 hrs (${diasRestantes} días restantes)`;
+                        } else {
+                            deadline.innerHTML = '⏰ <strong>Fecha límite de inscripción:</strong> Hoy hasta las 20:00 hrs';
+                        }
+                    }
+                } catch (e) {
+                    console.warn('⚠️ Error formateando fecha:', e);
                 }
             }
         }
@@ -209,7 +211,7 @@ async function cargarInformacionClase() {
             selectClase.value = claseInfo.nombre;
         }
         
-        // Guardar enlace de redirección (para clases públicas)
+        // Guardar enlace de redirección
         const enlaceRedireccion = document.getElementById('enlaceRedireccion');
         if (enlaceRedireccion) {
             if (claseInfo.enlaceFormulario) {
@@ -225,7 +227,7 @@ async function cargarInformacionClase() {
         console.error('❌ Error cargando clase:', error);
         document.getElementById('claseTitulo').textContent = 'Error al cargar la clase';
         
-        // Mostrar mensaje de error más específico
+        // Mostrar mensaje de error
         const claseIndicador = document.getElementById('claseIndicador');
         if (claseIndicador) {
             claseIndicador.style.display = 'block';
@@ -275,37 +277,29 @@ async function usuarioYaCompletoFormulario() {
             return false;
         }
         
-        const db = await mongoDB.getDatabaseSafe('formulario');
-        
-        // Buscar inscripción por claseId (si está disponible)
+        // Verificar usando claseId si está disponible
         if (claseId) {
-            const usuarioObjectId = new ObjectId(usuarioActual._id);
-            const claseObjectId = new ObjectId(claseId);
-            
-            // Buscar en inscripciones (usando claseId)
-            const inscripcionPorId = await db.collection('inscripciones').findOne({
-                usuarioId: usuarioObjectId,
-                claseId: claseObjectId
-            });
-            
-            if (inscripcionPorId) {
-                console.log('✅ Inscripción encontrada por claseId');
-                return true;
+            try {
+                const result = await makeRequestSafe(`/inscripciones/verificar/${usuarioActual._id}/${claseId}`, null, 'GET');
+                if (result && result.data && result.data.exists) {
+                    console.log('✅ Inscripción encontrada por claseId');
+                    return true;
+                }
+            } catch (error) {
+                console.log('⚠️ No se pudo verificar por claseId:', error);
             }
         }
         
         // Si no se encontró por claseId, buscar por nombre de clase
         if (claseNombre) {
-            const usuarioObjectId = new ObjectId(usuarioActual._id);
-            
-            const inscripcionPorNombre = await db.collection('inscripciones').findOne({
-                usuarioId: usuarioObjectId,
-                clase: claseNombre
-            });
-            
-            if (inscripcionPorNombre) {
-                console.log('✅ Inscripción encontrada por nombre de clase');
-                return true;
+            try {
+                const result = await makeRequestSafe(`/inscripciones/verificar/${usuarioActual._id}/${encodeURIComponent(claseNombre)}`, null, 'GET');
+                if (result && result.data && result.data.exists) {
+                    console.log('✅ Inscripción encontrada por nombre de clase');
+                    return true;
+                }
+            } catch (error) {
+                console.log('⚠️ No se pudo verificar por nombre:', error);
             }
         }
         
@@ -325,9 +319,14 @@ function obtenerEnlaceRedireccion() {
         return enlaceRedireccion.value;
     }
     
-    // Fallback: buscar enlace de Teams desde claseInfo
-    if (claseInfo && claseInfo.enlaceFormulario) {
-        return claseInfo.enlaceFormulario;
+    // Fallback: buscar enlace desde claseInfo
+    if (claseInfo) {
+        if (claseInfo.enlaceFormulario) {
+            return claseInfo.enlaceFormulario;
+        }
+        if (claseInfo.enlaces && claseInfo.enlaces.youtube) {
+            return claseInfo.enlaces.youtube;
+        }
     }
     
     return null;
@@ -442,13 +441,15 @@ function autocompletarDesdeUsuario() {
         const user = getCurrentUserSafe();
         console.log('🔄 Autocompletando formulario con datos del usuario:', user);
         
-        document.getElementById('apellidoNombre').value = user.apellidoNombre || '';
-        document.getElementById('legajo').value = user.legajo || '';
-        document.getElementById('email').value = user.email || '';
+        const apellidoNombre = document.getElementById('apellidoNombre');
+        const legajo = document.getElementById('legajo');
+        const email = document.getElementById('email');
+        const turno = document.getElementById('turno');
         
-        if (user.turno) {
-            document.getElementById('turno').value = user.turno;
-        }
+        if (apellidoNombre) apellidoNombre.value = user.apellidoNombre || '';
+        if (legajo) legajo.value = user.legajo || '';
+        if (email) email.value = user.email || '';
+        if (turno && user.turno) turno.value = user.turno;
     }
 }
 
@@ -463,25 +464,21 @@ async function guardarInscripcion(formData) {
             throw new Error('Usuario no autenticado');
         }
         
-        const db = await mongoDB.getDatabaseSafe('formulario');
-        
         const inscripcionData = {
-            usuarioId: new ObjectId(usuarioActual._id),
+            usuarioId: usuarioActual._id,
             clase: claseNombre,
             turno: formData.get('turno'),
-            fecha: new Date()
+            fecha: new Date().toISOString()
         };
         
         // Agregar claseId si está disponible
-        if (claseId && ObjectId.isValid(claseId)) {
-            inscripcionData.claseId = new ObjectId(claseId);
+        if (claseId) {
+            inscripcionData.claseId = claseId;
         }
         
         console.log('💾 Guardando inscripción:', inscripcionData);
-        
-        await db.collection('inscripciones').insertOne(inscripcionData);
-        console.log('✅ Inscripción guardada');
-        
+        const result = await makeRequestSafe('/inscripciones', inscripcionData);
+        console.log('✅ Inscripción guardada:', result);
         return true;
         
     } catch (error) {
@@ -512,7 +509,7 @@ async function validarFormulario(event) {
             
             let mensaje = `❌ Ya estás inscrito en: ${claseNombre}`;
             if (enlaceRedireccion) {
-                mensaje += `\n\nHaz click en OK para ir a la clase.`;
+                mensaje += `\n\n¿Quieres ir a la clase ahora?`;
                 if (confirm(mensaje)) {
                     window.open(enlaceRedireccion, '_blank');
                 }
