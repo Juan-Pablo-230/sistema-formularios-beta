@@ -512,7 +512,9 @@ function crearOpcionesAdmin() {
     }
 }
 
-// Cargar información de la clase - VERSIÓN QUE USA DATOS DEL HTML
+// formularios.js - Busca esta función y reemplázala
+
+// Cargar información de la clase - VERSIÓN CORREGIDA
 async function cargarInformacionClase() {
     const claseId = obtenerClaseId();
     
@@ -556,16 +558,26 @@ async function cargarInformacionClase() {
         console.log('⚠️ Error general cargando clase:', error.message);
     }
     
-    // Si no se pudo cargar, usar datos del HTML
+    // Si no se pudo cargar, usar el ID para generar un nombre
     if (!claseInfo) {
-        console.log('📝 Usando datos del HTML como fallback');
+        console.log('📝 Usando ID de clase como nombre');
         
-        // Intentar obtener el nombre del select
-        const selectClase = document.getElementById('clase');
-        const claseOption = document.getElementById('claseOption');
+        // Extraer un nombre legible del ID (opcional)
+        let nombreClase = 'Clase';
+        
+        // Intentar obtener el nombre de la URL o del localStorage
+        const urlParams = new URLSearchParams(window.location.search);
+        const claseNombreFromUrl = urlParams.get('nombre');
+        
+        if (claseNombreFromUrl) {
+            nombreClase = decodeURIComponent(claseNombreFromUrl);
+        } else {
+            // Si no hay nombre en URL, usar el ID como referencia
+            nombreClase = `Clase (${claseId.substring(0, 8)}...)`;
+        }
         
         claseInfo = {
-            nombre: claseOption ? claseOption.textContent : 'Clase',
+            nombre: nombreClase,
             fechaClase: new Date().toISOString(),
             enlaceFormulario: document.getElementById('enlaceRedireccion')?.value || '',
             instructores: ['Instructor'],
@@ -575,9 +587,10 @@ async function cargarInformacionClase() {
     
     console.log('📊 Clase cargada:', claseInfo);
     
-    // Actualizar UI con los datos que tenemos
+    // ACTUALIZAR EL TÍTULO
     document.getElementById('claseTitulo').textContent = claseInfo.nombre || 'Clase';
     
+    // ACTUALIZAR EL INDICADOR DE CLASE
     const claseIndicador = document.getElementById('claseIndicador');
     const claseNombre = document.getElementById('claseNombre');
     
@@ -586,13 +599,42 @@ async function cargarInformacionClase() {
         claseIndicador.style.display = 'block';
     }
     
+    // ACTUALIZAR EL SELECT - ¡ESTA ES LA PARTE IMPORTANTE!
     const selectClase = document.getElementById('clase');
     const claseOption = document.getElementById('claseOption');
     
     if (selectClase && claseOption) {
+        // Actualizar la opción del select
         claseOption.value = claseInfo.nombre;
         claseOption.textContent = claseInfo.nombre;
+        
+        // Forzar que el select muestre esta opción
         selectClase.value = claseInfo.nombre;
+        
+        console.log('✅ Select actualizado a:', claseInfo.nombre);
+    } else {
+        console.warn('⚠️ No se encontraron elementos del select');
+    }
+    
+    // ACTUALIZAR EL DEADLINE (fecha límite)
+    const deadline = document.getElementById('deadline');
+    if (deadline && claseInfo.fechaClase) {
+        try {
+            const fechaClase = new Date(claseInfo.fechaClase);
+            if (!isNaN(fechaClase.getTime())) {
+                const fechaFormateada = fechaClase.toLocaleDateString('es-AR', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                
+                deadline.innerHTML = `⏰ <strong>Fecha de la clase:</strong> ${fechaFormateada}`;
+            }
+        } catch (e) {
+            console.warn('⚠️ Error formateando fecha:', e);
+        }
     }
     
     return true;
