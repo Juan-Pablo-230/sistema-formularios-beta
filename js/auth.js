@@ -1,10 +1,11 @@
 console.warn("Esta es una versión BETA del sistema de inscripciones. Puede contener errores o funcionalidades incompletas. Por favor, utilícelo con precaución y reporte cualquier problema al desarrollador.");
 
+// auth.js - Versión con console.error visible
+
 class AuthSystem {
     constructor() {
         console.log('AuthSystem MongoDB inicializado');
-        // URL dinámica para Railway
-        this.apiBaseUrl = window.location.origin + '/api';
+        this.apiBaseUrl = ''; // Vacío para rutas relativas
         this.currentUser = null;
         this.init();
     }
@@ -16,7 +17,6 @@ class AuthSystem {
                 'Content-Type': 'application/json',
             };
             
-            // Añadir user-id si el usuario está logueado
             if (user && user._id) {
                 headers['user-id'] = user._id;
             }
@@ -30,30 +30,60 @@ class AuthSystem {
                 options.body = JSON.stringify(data);
             }
             
-            console.log('🌐 Haciendo request a:', `${this.apiBaseUrl}${endpoint}`);
+            console.log('🌐 Haciendo request a:', `/api${endpoint}`);
             console.log('👤 User ID en headers:', user?._id || 'No logueado');
             
-            const response = await fetch(`${this.apiBaseUrl}${endpoint}`, options);
+            const response = await fetch(`/api${endpoint}`, options);
             
+            // Verificar el content-type
             const contentType = response.headers.get('content-type');
-            let result;
             
-            if (contentType && contentType.includes('application/json')) {
-                result = await response.json();
-            } else {
+            if (!contentType || !contentType.includes('application/json')) {
                 const text = await response.text();
-                console.error('❌ Respuesta no es JSON:', text.substring(0, 200));
-                throw new Error(`El servidor devolvió: ${response.status} ${response.statusText}`);
+                console.error('❌ Respuesta no es JSON - La API no está disponible:', text.substring(0, 200));
+                // Devolver un objeto de error pero NO lanzar excepción
+                return { 
+                    success: false, 
+                    message: 'La API no está disponible en este entorno',
+                    error: 'NO_JSON_RESPONSE',
+                    status: response.status,
+                    data: null
+                };
             }
             
-            if (!response.ok || !result.success) {
-                throw new Error(result.message || `Error ${response.status}`);
+            const result = await response.json();
+            
+            if (!response.ok) {
+                console.error('❌ Error en respuesta:', result);
+                return { 
+                    success: false, 
+                    message: result.message || `Error ${response.status}`,
+                    status: response.status,
+                    data: null
+                };
+            }
+            
+            if (!result.success) {
+                console.error('❌ API devolvió error:', result);
+                return { 
+                    success: false, 
+                    message: result.message || 'Error desconocido',
+                    data: null
+                };
             }
             
             return result;
+            
         } catch (error) {
-            console.error('Error en la solicitud:', error);
-            throw error;
+            console.error('❌ Error en la solicitud:', error.message);
+            console.error('Stack:', error.stack);
+            // Devolver objeto de error en lugar de lanzar
+            return { 
+                success: false, 
+                message: error.message,
+                error: 'NETWORK_ERROR',
+                data: null
+            };
         }
     }
 
@@ -75,6 +105,10 @@ class AuthSystem {
                 password: password
             });
             
+            if (!result.success) {
+                throw new Error(result.message || 'Error de conexión con el servidor');
+            }
+            
             this.currentUser = result.data;
             localStorage.setItem('currentUser', JSON.stringify(this.currentUser));
             
@@ -82,6 +116,7 @@ class AuthSystem {
             return this.currentUser;
             
         } catch (error) {
+            console.error('❌ Error en login:', error);
             throw error;
         }
     }
@@ -89,8 +124,12 @@ class AuthSystem {
     async saveUserToCloud(userData) {
         try {
             const result = await this.makeRequest('/auth/register', userData);
+            if (!result.success) {
+                throw new Error(result.message || 'Error de conexión con el servidor');
+            }
             return true;
         } catch (error) {
+            console.error('❌ Error en registro:', error);
             throw error;
         }
     }
@@ -98,8 +137,12 @@ class AuthSystem {
     async createUserByAdmin(userData) {
         try {
             const result = await this.makeRequest('/admin/usuarios', userData);
+            if (!result.success) {
+                throw new Error(result.message || 'Error de conexión con el servidor');
+            }
             return true;
         } catch (error) {
+            console.error('❌ Error creando usuario:', error);
             throw error;
         }
     }
@@ -107,6 +150,7 @@ class AuthSystem {
     logout() {
         this.currentUser = null;
         localStorage.removeItem('currentUser');
+        console.log('👋 Usuario deslogueado');
     }
 
     isLoggedIn() {
@@ -142,15 +186,16 @@ class AuthSystem {
     async verifyCurrentPassword(password) {
         const user = this.getCurrentUser();
         if (!user) return false;
+        // En un sistema real, esto debería verificar contra el backend
         return user.password === password;
     }
 
     async checkLegajoExists(legajo) {
         try {
             const result = await this.makeRequest(`/auth/check-legajo/${legajo}`, null, 'GET');
-            return result.data.exists;
+            return result.success ? result.data.exists : false;
         } catch (error) {
-            console.error('Error verificando legajo:', error);
+            console.error('❌ Error verificando legajo:', error);
             return false;
         }
     }
