@@ -1,3 +1,4 @@
+/* ===== VARIABLES (se mantienen por si acaso, pero ya están en styles.css) ===== */
 :root {
     --youtube-color: #ff0000;
     --youtube-hover: #cc0000;
@@ -7,6 +8,67 @@
     --link-border: rgba(255, 255, 255, 0.2);
 }
 
+/* ===== ESTILOS DE CONTENEDOR (heredados de formularios.css) ===== */
+.container {
+    max-width: 600px;
+    margin: 0 auto;
+    background: var(--bg-container);
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: var(--shadow-lg);
+}
+
+.back-btn-container {
+    text-align: center;
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: center;
+}
+
+.back-btn {
+    display: inline-block;
+    background: #6c757d;
+    color: white;
+    padding: 12px 20px;
+    border-radius: 8px;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    font-weight: bold;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    min-width: 200px;
+}
+
+.back-btn:hover {
+    background: #5a6268;
+    color: white;
+    text-decoration: none;
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+/* Grupos de formulario */
+.form-group {
+    margin-bottom: 25px;
+    display: block;
+}
+
+.field-info {
+    display: block;
+    margin-top: 5px;
+    font-size: 0.8em;
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+#material {
+    display: block;
+}
+
+/* ===== ESTILOS EXISTENTES (específicos de solicitud-material) ===== */
 .material-links {
     margin-top: 30px;
     padding: 30px;
@@ -115,14 +177,6 @@
     opacity: 1;
 }
 
-.field-info {
-    display: block;
-    margin-top: 5px;
-    font-size: 0.8em;
-    color: var(--text-muted);
-    font-style: italic;
-}
-
 .status-message {
     padding: 15px;
     border-radius: 8px;
@@ -219,7 +273,7 @@
     box-shadow: var(--shadow-md);
 }
 
-/* Estilos para los filtros */
+/* ===== FILTROS ===== */
 .filtros-container {
     animation: slideDown 0.5s ease;
     border: 2px solid var(--border-color);
@@ -257,7 +311,6 @@
     background: var(--bg-card);
 }
 
-/* Estilos para el mensaje de sin clases */
 .sin-clases-mensaje {
     animation: fadeIn 0.5s ease;
     border: 2px dashed var(--border-color);
@@ -271,7 +324,22 @@
     color: var(--text-secondary);
 }
 
-/* Animaciones */
+.periodo-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 12px;
+    background: var(--accent-color);
+    color: white;
+    font-size: 0.8em;
+    margin-left: 8px;
+}
+
+/* ===== ANIMACIONES ADICIONALES ===== */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
 @keyframes slideDown {
     from {
         opacity: 0;
@@ -283,77 +351,13 @@
     }
 }
 
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-    }
-    to {
-        opacity: 1;
-    }
-}
-
-/* Badge para el período */
-.periodo-badge {
-    display: inline-block;
-    padding: 3px 8px;
-    border-radius: 12px;
-    background: var(--accent-color);
-    color: white;
-    font-size: 0.8em;
-    margin-left: 8px;
-}
-
-/* Información de la clase */
-.class-info {
-    background: var(--bg-container);
-    padding: 20px;
-    border-radius: 10px;
-    margin-bottom: 25px;
-    border-left: 4px solid var(--accent-color);
-}
-
-.class-info h3 {
-    color: var(--text-primary);
-    margin-bottom: 10px;
-    font-size: 1.3em;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    flex-wrap: wrap;
-}
-
-.class-info p {
-    color: var(--text-secondary);
-    font-size: 0.95em;
-    line-height: 1.5;
-    margin: 5px 0;
-}
-
-.class-info .periodo-info {
-    color: var(--accent-color);
-    font-weight: bold;
-}
-
-/* Mejoras en la tabla */
-.inscripciones-table th {
-    background: var(--accent-color);
-    color: white;
-    padding: 12px;
-    text-align: left;
-    font-size: 0.95em;
-}
-
-.inscripciones-table td {
-    padding: 10px 12px;
-    border-bottom: 1px solid var(--border-color);
-}
-
-.inscripciones-table tr:hover {
-    background: var(--bg-card);
-}
-
-/* Responsive */
+/* ===== RESPONSIVE ===== */
 @media (max-width: 768px) {
+    .container {
+        padding: 20px;
+        margin: 10px;
+    }
+
     .filtros-container {
         padding: 15px;
     }
@@ -378,19 +382,7 @@
     .periodo-badge {
         margin-left: 0;
     }
-}
 
-@media (max-width: 480px) {
-    .sin-clases-mensaje {
-        padding: 20px;
-    }
-    
-    .sin-clases-mensaje h3 {
-        font-size: 1.1em;
-    }
-}
-
-@media (max-width: 768px) {
     .links-container {
         grid-template-columns: 1fr;
         gap: 15px;
@@ -411,13 +403,26 @@
     .class-info {
         padding: 15px;
     }
-    
-    .class-info h3 {
-        font-size: 1.1em;
+
+    .back-btn {
+        width: 100%;
+        min-width: auto;
     }
 }
 
 @media (max-width: 480px) {
+    .container {
+        padding: 15px;
+    }
+
+    .sin-clases-mensaje {
+        padding: 20px;
+    }
+    
+    .sin-clases-mensaje h3 {
+        font-size: 1.1em;
+    }
+
     .material-links {
         padding: 20px;
     }
