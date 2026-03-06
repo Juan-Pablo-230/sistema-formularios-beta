@@ -328,29 +328,26 @@
 
         // Función para obtener timestamps de apertura y cierre
         function obtenerTimestampsClase(clase) {
-            let apertura = null;
-            let cierre = null;
+    let apertura = null;
+    let cierre = null;
 
-            if (clase.fechaApertura) {
-                apertura = new Date(clase.fechaApertura).getTime();
-            } else if (clase.fechaClase) {
-                const fecha = new Date(clase.fechaClase);
-                fecha.setHours(0, 0, 0, 0);
-                apertura = fecha.getTime();
-            }
+    // Si existe fechaApertura, usarla (debe incluir hora)
+    if (clase.fechaApertura) {
+        apertura = new Date(clase.fechaApertura).getTime();
+    } else if (clase.fechaClase) {
+        // Si no, usar fechaClase completa (con su hora)
+        apertura = new Date(clase.fechaClase).getTime();
+    }
 
-            if (clase.fechaCierre) {
-                cierre = new Date(clase.fechaCierre).getTime();
-            } else if (apertura) {
-                cierre = apertura + 60 * 60 * 1000;
-            } else if (clase.fechaClase) {
-                const fecha = new Date(clase.fechaClase);
-                fecha.setHours(20, 0, 0, 0);
-                cierre = fecha.getTime();
-            }
+    if (clase.fechaCierre) {
+        cierre = new Date(clase.fechaCierre).getTime();
+    } else if (apertura) {
+        // Si no hay cierre, sumar 1 hora a la apertura real
+        cierre = apertura + 60 * 60 * 1000;
+    }
 
-            return { apertura, cierre };
-        }
+    return { apertura, cierre };
+}
 
         // Determinar si la clase debe mostrarse en el grid
         function claseEsVisible(clase) {
