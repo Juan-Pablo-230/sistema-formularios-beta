@@ -618,33 +618,86 @@ class MaterialHistorico {
     }
 
     async guardarSolicitud(claseData) {
+    const btnSubmit = document.querySelector('#materialHistoricoForm .submit-btn');
+    const textoOriginal = btnSubmit ? btnSubmit.textContent : '🔍 Obtener Material';
+    
+    try {
+        // Deshabilitar botón mientras se procesa
+        if (btnSubmit) {
+            btnSubmit.disabled = true;
+            btnSubmit.textContent = '⏳ Guardando solicitud...';
+        }
+
+        const user = getCurrentUserSafe();
+        if (!user || !user._id) {
+            throw new Error('No hay usuario autenticado');
+        }
+
+        const solicitudData = {
+            claseId: claseData.id,
+            claseNombre: claseData.nombre,
+            email: user.email,
+            youtube: claseData.youtube,
+            powerpoint: claseData.powerpoint,
+            fechaClase: claseData.fecha,
+            fechaSolicitud: new Date().toISOString()
+        };
+
+        console.log('📤 Enviando solicitud al servidor:', solicitudData);
+
+        // Usar makeRequestSafe que ya maneja la URL base
+        const result = await makeRequestSafe('/material-historico/solicitudes', solicitudData, 'POST');
+
+        if (result && result.success) {
+            console.log('✅ Solicitud guardada exitosamente en el servidor');
+            this.mostrarMensaje('✅ Solicitud registrada correctamente', 'success');
+            
+            // Actualizar la tabla de mis solicitudes
+            await this.cargarMisSolicitudes();
+        } else {
+            // Si el servidor responde pero no es exitoso
+            const mensaje = result?.message || 'Error al guardar la solicitud';
+            throw new Error(mensaje);
+        }
+
+    } catch (error) {
+        console.error('❌ Error al guardar solicitud:', error);
+        
+        // Mostrar mensaje de error específico
+        this.mostrarMensaje(`❌ Error: ${error.message}. Intente nuevamente.`, 'error');
+        
+        // Opcional: guardar en localStorage como respaldo
         try {
             const user = getCurrentUserSafe();
-            
-            const solicitudData = {
-                claseId: claseData.id,
-                claseNombre: claseData.nombre,
-                email: user.email,
-                youtube: claseData.youtube,
-                powerpoint: claseData.powerpoint,
-                fechaClase: claseData.fecha,
-                fechaSolicitud: new Date().toISOString()
-            };
-
-            console.log('📤 Guardando solicitud:', solicitudData);
-            
-            const result = await makeRequestSafe('/material-historico/solicitudes', solicitudData);
-            
-            if (result.success) {
-                console.log('✅ Solicitud guardada');
-                await this.cargarMisSolicitudes();
+            if (user) {
+                const storageKey = `solicitudMaterial_${user._id}`;
+                let solicitudesPrevias = JSON.parse(localStorage.getItem(storageKey) || '[]');
+                
+                // Evitar duplicados (opcional)
+                const existe = solicitudesPrevias.some(s => s.claseId === claseData.id);
+                if (!existe) {
+                    solicitudesPrevias.push({
+                        ...claseData,
+                        fechaSolicitud: new Date().toISOString(),
+                        email: user.email
+                    });
+                    localStorage.setItem(storageKey, JSON.stringify(solicitudesPrevias));
+                    console.log('💾 Solicitud guardada en localStorage como respaldo');
+                    this.mostrarMensaje('📦 Solicitud guardada localmente (sin conexión al servidor)', 'info');
+                }
             }
-            
-        } catch (error) {
-            console.error('❌ Error guardando solicitud:', error);
-            this.mostrarMensaje('Material disponible (modo offline)', 'info');
+        } catch (e) {
+            console.error('Error guardando en localStorage:', e);
+        }
+
+    } finally {
+        // Restaurar botón
+        if (btnSubmit) {
+            btnSubmit.disabled = false;
+            btnSubmit.textContent = textoOriginal;
         }
     }
+}
 
     async cargarMisSolicitudes() {
         try {
