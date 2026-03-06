@@ -45,81 +45,32 @@
             </div>
         </header>
 
-        <div class="main-layout">
-            <div class="left-column">
-                <div class="classes-grid" id="dynamic-classes-grid">
-                    <div class="loading-classes">Cargando clases disponibles...</div>
-                </div>
+        <!-- Grid de clases a ancho completo -->
+        <div class="classes-grid" id="dynamic-classes-grid">
+            <div class="loading-classes">Cargando clases disponibles...</div>
+        </div>
 
-                <div class="video-section">
-                    <div class="video-container">
-                        <div class="video-header">
-                            <h2>Video instructivo del sistema.</h2>
-                            <p>Mira este tutorial para aprender a usar correctamente el sistema de inscripciones</p>
-                        </div>
-                        <div class="video-wrapper">
-                            <iframe width="560" height="315" 
-                                    src="https://www.youtube.com/embed/1He-QhC2WOo?si=4ptWjDUuRr7Eg9gf" 
-                                    title="YouTube video player" 
-                                    frameborder="0" 
-                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
-                                    referrerpolicy="strict-origin-when-cross-origin" 
-                                    allowfullscreen>
-                            </iframe>
-                        </div>
-                    </div>
+        <!-- Sección de Video (opcional, se mantiene) -->
+        <div class="video-section">
+            <div class="video-container">
+                <div class="video-header">
+                    <h2>Video instructivo del sistema.</h2>
+                    <p>Mira este tutorial para aprender a usar correctamente el sistema de inscripciones</p>
                 </div>
-            </div>
-
-            <div class="right-column">
-                <div class="calendar-sidebar">
-                    <div class="calendar-header">
-                        <h3>📅 Calendario</h3>
-                        <p>Agrega clases a tu calendario personal</p>
-                    </div>
-                    
-                    <div class="calendar-settings">
-                        <h4>⏰ Recordatorios:</h4>
-                        <div class="reminder-grid">
-                            <label><input type="checkbox" class="reminder-checkbox" value="10" checked> 10 min</label>
-                            <label><input type="checkbox" class="reminder-checkbox" value="30" checked> 30 min</label>
-                            <label><input type="checkbox" class="reminder-checkbox" value="60" checked> 1 hora</label>
-                            <label><input type="checkbox" class="reminder-checkbox" value="180"> 3 horas</label>
-                            <label><input type="checkbox" class="reminder-checkbox" value="1440"> 1 día</label>
-                            <label><input type="checkbox" class="reminder-checkbox" value="10080"> 1 semana</label>
-                        </div>
-                    </div>
-                    
-                    <div class="calendar-classes-list">
-                        <h4>Clases Disponibles:</h4>
-                        
-                        <div class="calendar-actions">
-                            <div class="selected-count">
-                                <span id="selectedClassesCount">0</span> clases seleccionadas
-                            </div>
-                            
-                            <div class="action-buttons">
-                                <button id="downloadSelectedBtn" class="download-selected-btn" onclick="calendarManager.downloadSelected()">
-                                    📥 Descargar clases seleccionadas
-                                </button>
-                                <button id="downloadAllBtn" class="download-all-btn" onclick="calendarManager.downloadAll()">
-                                    📥 Descargar todas las clases
-                                </button>
-                            </div>
-                        </div>
-                        
-                        <div class="selection-preview">
-                            <h4>📋 Vista Previa:</h4>
-                            <div class="preview-list" id="previewList">
-                                <div class="empty-preview">No hay clases seleccionadas</div>
-                            </div>
-                        </div>
-                    </div>
+                <div class="video-wrapper">
+                    <iframe width="560" height="315" 
+                            src="https://www.youtube.com/embed/1He-QhC2WOo?si=4ptWjDUuRr7Eg9gf" 
+                            title="YouTube video player" 
+                            frameborder="0" 
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                            referrerpolicy="strict-origin-when-cross-origin" 
+                            allowfullscreen>
+                    </iframe>
                 </div>
             </div>
         </div>
 
-    </div>
+    </div> <!-- Cierre del container -->
 
     <!-- Modal de inscripción -->
     <div id="modalInscripcion" class="modal-overlay" style="display: none;">
@@ -143,7 +94,7 @@
     </div>
 
     <div id="updateProfileModal" class="modal-overlay" style="display: none;">
-        <!-- ... contenido existente ... -->
+        <!-- Contenido del modal de perfil (sin cambios) -->
         <div class="modal-container">
             <div class="modal-header">
                 <h2>✏️ Mi perfil - Version Beta</h2>
@@ -157,24 +108,123 @@
 
             <div id="updateTab" class="modal-tab-content active">
                 <form id="updateProfileForm" class="modal-form">
-                    <!-- ... campos ... -->
+                    <div class="security-notice">
+                        ⚠️ Para modificar sus datos, debe ingresar su contraseña actual
+                    </div>
+                    <div class="form-group">
+                        <label for="updateCurrentPassword">Contraseña Actual *</label>
+                        <div class="password-field">
+                            <input type="password" id="updateCurrentPassword" name="currentPassword" required>
+                            <button type="button" class="toggle-password">👁️</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="updateApellidoNombre">Apellido y Nombre *</label>
+                        <input type="text" id="updateApellidoNombre" name="apellidoNombre" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="updateLegajo">Número de Legajo *</label>
+                        <input type="number" id="updateLegajo" name="legajo" required>
+                        <small class="legajo-warning" style="display: none;">
+                            ⚠️ Este legajo ya está registrado. Por favor use su cuenta existente. Si olvidó su contraseña, por favor contacte al administrador para poder realizar el restablecimiento de la misma.
+                        </small>
+                    </div>
+                    <div class="form-group">
+                        <label for="updateTurno">Turno de Trabajo *</label>
+                        <select id="updateTurno" name="turno" required>
+                            <option value="">Seleccione turno</option>
+                            <option value="Turno mañana">Turno mañana</option>
+                            <option value="Turno tarde">Turno tarde</option>
+                            <option value="Turno noche A">Turno noche A</option>
+                            <option value="Turno noche B">Turno noche B</option>
+                            <option value="Turno intermedio">Turno intermedio</option>
+                            <option value="Turno SADOFE">Turno Sábado, Domingo y feriado</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="updateEmail">Correo Electrónico *</label>
+                        <input type="email" id="updateEmail" name="email" required>
+                    </div>
+                    <div class="password-section">
+                        <h4>Cambiar Contraseña (opcional)</h4>
+                        <div class="form-group">
+                            <label for="updatePassword">Nueva Contraseña</label>
+                            <div class="password-field">
+                                <input type="password" id="updatePassword" name="password" placeholder="Mínimo 6 caracteres">
+                                <button type="button" class="toggle-password">👁️</button>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="updateConfirmPassword">Confirmar Nueva Contraseña</label>
+                            <div class="password-field">
+                                <input type="password" id="updateConfirmPassword" name="confirmPassword">
+                                <button type="button" class="toggle-password">👁️</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="submit-btn">💾 Guardar Cambios</button>
+                        <button type="button" class="cancel-btn">❌ Cancelar</button>
+                    </div>
                 </form>
             </div>
 
             <div id="deleteTab" class="modal-tab-content">
                 <div class="delete-warning">
-                    <!-- ... contenido ... -->
+                    <div class="warning-icon">⚠️</div>
+                    <h3>Eliminar la cuenta de forma permanentemente</h3>
+                    <p><strong>Importante:</strong> Esta acción no se puede deshacer.</p>
+                    
+                    <div class="warning-details">
+                        <h4>¿Qué se eliminará?</h4>
+                        <ul>
+                            <li>✅ Sus datos personales de la cuenta</li>
+                            <li>✅ Su información de acceso</li>
+                        </ul>
+                        <h4>¿Qué NO se eliminará?</h4>
+                        <ul>
+                            <li>❌ Las respuestas de formularios ya completados</li>
+                            <li>❌ Las inscripciones a clases realizadas</li>
+                            <li>❌ Los registros de asistencia</li>
+                        </ul>
+                        <p class="important-note">
+                            <strong>Nota:</strong> Los formularios que ya completó permanecerán en el sistema 
+                            para fines de registro y estadísticas, pero sin sus datos personales asociados.
+                        </p>
+                    </div>
+
+                    <form id="deleteAccountForm" class="modal-form">
+                        <div class="form-group">
+                            <label for="deleteCurrentPassword">Ingrese su contraseña actual *</label>
+                            <div class="password-field">
+                                <input type="password" id="deleteCurrentPassword" name="currentPassword" required>
+                                <button type="button" class="toggle-password">👁️</button>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="deleteConfirmation">
+                                <input type="checkbox" id="deleteConfirmation" name="confirmation" required>
+                                Entiendo que esta acción es irreversible y acepto que mis formularios 
+                                completados permanecerán en el sistema.
+                            </label>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="delete-account-btn">🗑️ Eliminar cuenta</button>
+                            <button type="button" class="cancel-btn">❌ Cancelar</button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
     </div>
+
     <footer><a href="https://sistema-formularios-production.up.railway.app/">Ir a la version estable del sistema</a></footer>
 
     <script src="/js/auth.js"></script>
     <script src="/js/profile-updater.js"></script>
-    <script src="/js/calendar.js"></script>
+    <!-- calendar.js eliminado -->
 
-    <!-- Script principal -->
+    <!-- Script principal (con toda la lógica) -->
     <script>
         let clasesCargadas = false;
         let timeoutCarga = null;
@@ -209,7 +259,6 @@
 
         // Funciones para ICS
         function generarICS(clase) {
-            // Determinar inicio y fin (usamos la misma lógica que en el modal)
             let inicio, fin;
             if (clase.fechaApertura) {
                 inicio = new Date(clase.fechaApertura);
@@ -222,7 +271,6 @@
             if (clase.fechaCierre) {
                 fin = new Date(clase.fechaCierre);
             } else {
-                // Si no hay cierre, sumar 1 hora a inicio
                 fin = new Date(inicio.getTime() + 60 * 60 * 1000);
             }
 
@@ -286,7 +334,6 @@
             if (clase.fechaApertura) {
                 apertura = new Date(clase.fechaApertura).getTime();
             } else if (clase.fechaClase) {
-                // Si no hay apertura, usar fechaClase a las 00:00
                 const fecha = new Date(clase.fechaClase);
                 fecha.setHours(0, 0, 0, 0);
                 apertura = fecha.getTime();
@@ -295,10 +342,8 @@
             if (clase.fechaCierre) {
                 cierre = new Date(clase.fechaCierre).getTime();
             } else if (apertura) {
-                // Si no hay cierre, sumar 1 hora a la apertura
                 cierre = apertura + 60 * 60 * 1000;
             } else if (clase.fechaClase) {
-                // Último recurso: fechaClase a las 20:00 (por compatibilidad)
                 const fecha = new Date(clase.fechaClase);
                 fecha.setHours(20, 0, 0, 0);
                 cierre = fecha.getTime();
@@ -310,7 +355,7 @@
         // Determinar si la clase debe mostrarse en el grid
         function claseEsVisible(clase) {
             const { cierre } = obtenerTimestampsClase(clase);
-            if (!cierre) return true; // si no hay cierre, se muestra
+            if (!cierre) return true;
             const ahora = Date.now();
             return ahora < cierre;
         }
@@ -479,7 +524,6 @@
                 let clases = result.data;
                 console.log(`📊 Clases encontradas (sin filtrar): ${clases.length}`);
 
-                // Filtrar clases visibles según su cierre
                 const clasesVisibles = clases.filter(clase => claseEsVisible(clase));
                 console.log(`📊 Clases visibles después de filtrar: ${clasesVisibles.length}`);
 
@@ -489,7 +533,7 @@
                     return;
                 }
 
-                // Ordenar por fecha de apertura (más próximas primero)
+                // Ordenar por fecha de apertura
                 clasesVisibles.sort((a, b) => {
                     const { apertura: aApertura } = obtenerTimestampsClase(a);
                     const { apertura: bApertura } = obtenerTimestampsClase(b);
@@ -533,9 +577,6 @@
         }
 
         function verificarClasesExpiradas() {
-            const gridContainer = document.getElementById('dynamic-classes-grid');
-            if (!gridContainer) return;
-            // Simplemente recargamos las clases para actualizar la visibilidad
             cargarClasesPublicas(true);
         }
 

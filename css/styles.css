@@ -284,66 +284,12 @@ body {
     box-shadow: 0 0 0 3px rgba(66, 133, 244, 0.2);
 }
 
-/* ===== LAYOUT DE DOS COLUMNAS CON MISMA ALTURA ===== */
-.main-layout {
-    display: grid;
-    grid-template-columns: 2fr 1fr;
-    gap: 30px;
-    margin-top: 30px;
-    align-items: start;
-}
-
-/* Hacer que ambas columnas tengan altura completa */
-.left-column, .right-column {
-    height: 100%;
-}
-
-/* Columna izquierda - altura natural del contenido */
-.left-column {
-    display: flex;
-    flex-direction: column;
-    gap: 30px;
-}
-
-/* Columna derecha - altura igual a la izquierda */
-.right-column {
-    position: sticky;
-    top: 20px;
-    align-self: start;
-}
-
-/* Calendario - igual altura que el contenido izquierdo */
-.calendar-sidebar {
-    background: var(--bg-container);
-    border-radius: 15px;
-    border: 2px solid var(--border-color);
-    padding: 20px;
-    box-shadow: var(--shadow-lg);
-    position: relative;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    height: 66.5%;
-}
-
-.calendar-sidebar::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 5px;
-    background: linear-gradient(90deg, #667eea, #764ba2, #2196F3);
-    border-radius: 15px 15px 0 0;
-}
-
-/* ===== ESTILOS PARA EL GRID DE CLASES (IZQUIERDA) ===== */
+/* ===== GRID DE CLASES ===== */
 .classes-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    grid-template-columns: repeat(4, 1fr);
     gap: 25px;
-    margin-top: 0;
+    margin-top: 30px;
 }
 
 .class-card {
@@ -425,7 +371,7 @@ body {
     margin-top: auto;
 }
 
-/* ===== NUEVOS ESTILOS PARA CARGA DINÁMICA DE CLASES ===== */
+/* ===== ESTILOS PARA CARGA DINÁMICA DE CLASES ===== */
 .loading-classes,
 .no-classes-message,
 .error-message {
@@ -497,17 +443,6 @@ body {
     font-size: 0.9em;
 }
 
-/* Estilos para el grid en diferentes estados */
-.classes-grid:empty {
-    display: none;
-}
-
-.classes-grid:has(.loading-classes),
-.classes-grid:has(.no-classes-message),
-.classes-grid:has(.error-message) {
-    display: block;
-}
-
 /* Animación para las tarjetas cargadas dinámicamente */
 .class-card {
     animation: cardAppear 0.5s ease-out forwards;
@@ -536,39 +471,7 @@ body {
 .class-card:nth-child(9) { animation-delay: 0.9s; }
 .class-card:nth-child(10) { animation-delay: 1s; }
 
-/* Estilo para cuando no hay clases (versión compacta) */
-.no-classes-compact {
-    grid-column: 1 / -1;
-    text-align: center;
-    padding: 30px;
-    color: var(--text-muted);
-    background: var(--bg-card);
-    border-radius: 12px;
-    border: 1px dashed var(--border-color);
-}
-
-/* Mejora para el botón de formulario en las tarjetas */
-.class-card .form-link {
-    display: inline-block;
-    margin-top: 10px;
-    padding: 8px 16px;
-    background: var(--accent-color);
-    color: white;
-    text-decoration: none;
-    border-radius: 6px;
-    font-size: 0.9em;
-    font-weight: 600;
-    transition: all 0.3s ease;
-}
-
-.class-card .form-link:hover {
-    background: var(--accent-hover);
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-md);
-}
-
-/* ===== FIN DE NUEVOS ESTILOS ===== */
-
+/* ===== MODALES ===== */
 .modal-overlay {
     position: fixed;
     top: 0;
@@ -891,749 +794,6 @@ body {
     border: none;
 }
 
-.user-section {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 15px;
-}
-
-/* Estilos para usuario logueado */
-.user-info {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 10px;
-}
-
-.user-welcome {
-    background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%);
-    color: #333;
-    padding: 10px 20px;
-    border-radius: 25px;
-    font-weight: bold;
-    font-size: 14px;
-    box-shadow: 0 4px 15px rgba(255, 154, 158, 0.3);
-    text-align: center;
-    min-width: 250px;
-}
-
-.user-actions {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-}
-
-.update-profile-btn, .logout-btn, .admin-panel-btn {
-    padding: 10px 20px;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    font-weight: bold;
-    font-size: 14px;
-    transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    white-space: nowrap;
-}
-
-.update-profile-btn {
-    background: linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%);
-    color: #333;
-}
-
-.update-profile-btn:hover {
-    background: linear-gradient(135deg, #8fb4fc 0%, #a8dff9 100%);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(161, 196, 253, 0.4);
-}
-
-.logout-btn {
-    background: linear-gradient(135deg, #ff6b6b 0%, #ff8e8e 100%);
-    color: white;
-}
-
-.logout-btn:hover {
-    background: linear-gradient(135deg, #ff5252 0%, #ff7b7b 100%);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
-}
-
-.admin-panel-btn {
-    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-    color: white;
-}
-
-.admin-panel-btn:hover {
-    background: linear-gradient(135deg, #e684f5 0%, #e74c3c 100%);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(240, 147, 251, 0.4);
-}
-
-/* Estilos para invitado */
-.guest-info {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 10px;
-}
-
-.guest-welcome {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    padding: 10px 20px;
-    border-radius: 25px;
-    font-weight: bold;
-    font-size: 14px;
-    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
-    text-align: center;
-    min-width: 150px;
-}
-
-.guest-actions {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-    padding-top: 3%;
-}
-
-.login-btn, .register-btn {
-    padding: 12px 24px;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    font-weight: bold;
-    font-size: 14px;
-    transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    white-space: nowrap;
-}
-
-.login-btn {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-}
-
-.login-btn:hover {
-    background: linear-gradient(135deg, #5a6fd8 0%, #6a3f8f 100%);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
-}
-
-.register-btn {
-    background: linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%);
-    color: white;
-}
-
-.register-btn:hover {
-    background: linear-gradient(135deg, #43A047 0%, #1B5E20 100%);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
-}
-
-/* ===== ESTILOS PARA EL CALENDARIO CON ALTURA COMPLETA ===== */
-
-.calendar-header {
-    text-align: center;
-    padding-bottom: 15px;
-    border-bottom: 2px solid var(--border-color);
-    flex-shrink: 0;
-}
-
-.calendar-header h3 {
-    color: var(--text-primary);
-    font-size: 1.4em;
-    margin-bottom: 6px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    line-height: 1.2;
-}
-
-.calendar-header p {
-    color: var(--text-secondary);
-    font-size: 0.9em;
-    line-height: 1.4;
-}
-
-/* Configuración de recordatorios */
-.calendar-settings {
-    background: rgba(66, 133, 244, 0.08);
-    padding: 15px;
-    border-radius: 12px;
-    border: 1px solid var(--border-color);
-    flex-shrink: 0;
-}
-
-.calendar-settings h4 {
-    color: var(--text-primary);
-    margin-bottom: 12px;
-    font-size: 1em;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.reminder-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
-}
-
-.reminder-grid label {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    color: var(--text-secondary);
-    font-size: 0.85em;
-    cursor: pointer;
-    padding: 6px 8px;
-    border-radius: 8px;
-    transition: all 0.3s ease;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid transparent;
-    white-space: nowrap;
-}
-
-.reminder-grid label:hover {
-    background: rgba(66, 133, 244, 0.12);
-    border-color: var(--accent-color);
-}
-
-.reminder-checkbox {
-    cursor: pointer;
-    width: 16px;
-    height: 16px;
-    accent-color: var(--accent-color);
-    flex-shrink: 0;
-}
-
-/* Tarjetas de clases individuales en calendario */
-.calendar-class-card {
-    background: var(--bg-card);
-    border-radius: 12px;
-    padding: 18px;
-    margin-bottom: 15px;
-    border: 2px solid var(--border-color);
-    transition: all 0.3s ease;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    position: relative;
-    overflow: hidden;
-    min-height: 140px;
-    justify-content: space-between;
-    word-wrap: break-word;
-    overflow-wrap: break-word;
-    hyphens: auto;
-    flex-shrink: 0;
-}
-
-.calendar-class-card:hover {
-    border-color: var(--accent-color);
-    transform: translateY(-3px);
-    box-shadow: var(--shadow-md);
-}
-
-.calendar-class-card.selected {
-    border-color: #34a853;
-    background: rgba(52, 168, 83, 0.05);
-}
-
-.calendar-class-card.selected::after {
-    content: '✓';
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    background: #34a853;
-    color: white;
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: bold;
-    font-size: 0.9em;
-}
-
-.class-info {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    flex: 1;
-    min-height: 0;
-}
-
-.class-title {
-    color: var(--text-primary);
-    font-weight: 600;
-    font-size: 1.05em;
-    line-height: 1.3;
-    min-height: 2.5em;
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    word-break: break-word;
-}
-
-.class-details {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    align-items: center;
-    margin: 8px 0;
-    flex-shrink: 0;
-}
-
-.detail-item {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    color: var(--text-secondary);
-    font-size: 0.85em;
-    background: rgba(255, 255, 255, 0.05);
-    padding: 4px 8px;
-    border-radius: 12px;
-    border: 1px solid var(--border-color);
-    white-space: nowrap;
-    flex-shrink: 0;
-}
-
-.modality {
-    font-weight: 600;
-    font-size: 0.8em;
-    text-transform: uppercase;
-    padding: 3px 8px !important;
-}
-
-.modality.presencial {
-    background: rgba(76, 175, 80, 0.15) !important;
-    color: #2E7D32 !important;
-    border-color: rgba(76, 175, 80, 0.3) !important;
-}
-
-.modality.virtual {
-    background: rgba(33, 150, 243, 0.15) !important;
-    color: #1565C0 !important;
-    border-color: rgba(33, 150, 243, 0.3) !important;
-}
-
-.modality.hibrida {
-    background: rgba(156, 39, 176, 0.15) !important;
-    color: #7B1FA2 !important;
-    border-color: rgba(156, 39, 176, 0.3) !important;
-}
-
-.class-instructor {
-    color: var(--text-muted);
-    font-size: 0.85em;
-    font-style: italic;
-    line-height: 1.4;
-    min-height: 2.5em;
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    margin-top: auto;
-    word-break: break-word;
-}
-
-/* Lista de clases para agregar al calendario */
-.calendar-classes-list {
-    flex: 1;
-    min-height: 0;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    margin-bottom: 15px;
-}
-
-.calendar-classes-list h4 {
-    color: var(--text-primary);
-    margin-bottom: 12px;
-    font-size: 1em;
-    padding-bottom: 8px;
-    border-bottom: 1px solid var(--border-color);
-    flex-shrink: 0;
-}
-
-/* Botón Agregar a Calendario */
-.add-to-calendar-btn {
-    width: 100%;
-    padding: 10px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-weight: 600;
-    font-size: 0.9em;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    position: relative;
-    overflow: hidden;
-    flex-shrink: 0;
-    height: 38px;
-    min-height: 38px;
-}
-
-.add-to-calendar-btn:hover {
-    background: linear-gradient(135deg, #5a6fd8 0%, #6a3f8f 100%);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.3);
-}
-
-.add-to-calendar-btn:active {
-    transform: translateY(0);
-}
-
-.add-to-calendar-btn.added {
-    background: linear-gradient(135deg, #34a853 0%, #0f9d58 100%);
-}
-
-.add-to-calendar-btn.added::before {
-    content: '✓ ';
-    font-weight: bold;
-}
-
-/* Acciones del calendario */
-.calendar-actions {
-    background: rgba(52, 168, 83, 0.08);
-    padding: 15px;
-    border-radius: 12px;
-    margin-bottom: 15px;
-    border: 1px solid rgba(52, 168, 83, 0.2);
-    flex-shrink: 0;
-}
-
-.selected-count {
-    text-align: center;
-    margin-bottom: 12px;
-    font-size: 0.95em;
-    color: var(--text-primary);
-}
-
-.selected-count span {
-    display: inline-block;
-    background: #34a853;
-    color: white;
-    width: 26px;
-    height: 26px;
-    border-radius: 50%;
-    line-height: 26px;
-    font-weight: bold;
-    margin-right: 6px;
-}
-
-.action-buttons {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.download-selected-btn, .download-all-btn {
-    width: 100%;
-    padding: 12px;
-    border: none;
-    border-radius: 8px;
-    font-weight: 600;
-    font-size: 0.9em;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    height: 42px;
-    min-height: 42px;
-}
-
-.download-selected-btn {
-    background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
-    color: white;
-}
-
-.download-selected-btn:hover:not(:disabled) {
-    background: linear-gradient(135deg, #1976D2 0%, #1565C0 100%);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(33, 150, 243, 0.3);
-}
-
-.download-all-btn {
-    background: linear-gradient(135deg, #9c27b0 0%, #7b1fa2 100%);
-    color: white;
-}
-
-.download-all-btn:hover {
-    background: linear-gradient(135deg, #8e24aa 0%, #6a1b9a 100%);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(156, 39, 176, 0.3);
-}
-
-.download-selected-btn:disabled {
-    background: var(--gray-500);
-    cursor: not-allowed;
-    transform: none;
-    box-shadow: none;
-    opacity: 0.6;
-}
-
-.calendar-help {
-    margin-top: 15px;
-    text-align: center;
-    color: var(--text-muted);
-    font-size: 0.85em;
-    line-height: 1.4;
-}
-
-/* Vista previa de selección */
-.selection-preview {
-    background: var(--bg-card);
-    border-radius: 12px;
-    padding: 15px;
-    border: 1px solid var(--border-color);
-    flex-shrink: 0;
-    min-height: 150px;
-    max-height: 200px;
-    display: flex;
-    flex-direction: column;
-}
-
-.selection-preview h4 {
-    color: var(--text-primary);
-    margin-bottom: 12px;
-    font-size: 1em;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-shrink: 0;
-}
-
-.preview-list {
-    flex: 1;
-    overflow-y: auto;
-    min-height: 0;
-}
-
-.empty-preview {
-    text-align: center;
-    color: var(--text-muted);
-    font-style: italic;
-    padding: 20px;
-}
-
-.preview-item {
-    padding: 10px;
-    margin-bottom: 8px;
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 8px;
-    border: 1px solid var(--border-color);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    animation: slideIn 0.3s ease;
-}
-
-.preview-item:last-child {
-    margin-bottom: 0;
-}
-
-.preview-item-info {
-    flex: 1;
-}
-
-.preview-item-title {
-    color: var(--text-primary);
-    font-size: 0.95em;
-    font-weight: 500;
-    margin-bottom: 4px;
-}
-
-.preview-item-details {
-    color: var(--text-secondary);
-    font-size: 0.85em;
-    display: flex;
-    gap: 10px;
-}
-
-.remove-preview-btn {
-    background: none;
-    border: none;
-    color: var(--error-500);
-    cursor: pointer;
-    font-size: 1.2em;
-    padding: 4px;
-    border-radius: 4px;
-    transition: all 0.3s ease;
-    flex-shrink: 0;
-}
-
-.remove-preview-btn:hover {
-    background: rgba(234, 67, 53, 0.1);
-    transform: scale(1.1);
-}
-
-/* Mensaje de éxito */
-.calendar-success-message {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    background: linear-gradient(135deg, #34a853 0%, #0f9d58 100%);
-    color: white;
-    padding: 15px 20px;
-    border-radius: 10px;
-    box-shadow: var(--shadow-lg);
-    z-index: 10000;
-    max-width: 300px;
-    animation: slideInRight 0.3s ease;
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    backdrop-filter: blur(10px);
-}
-
-.calendar-success-message.fade-out {
-    animation: slideOutRight 0.3s ease forwards;
-}
-
-.success-icon {
-    font-size: 1.8em;
-    flex-shrink: 0;
-}
-
-.success-content {
-    flex: 1;
-}
-
-.success-content strong {
-    display: block;
-    font-size: 1.1em;
-    margin-bottom: 5px;
-}
-
-.success-content div {
-    font-size: 0.9em;
-    opacity: 0.9;
-    line-height: 1.4;
-}
-
-/* Animaciones */
-@keyframes slideInRight {
-    from {
-        transform: translateX(100%);
-        opacity: 0;
-    }
-    to {
-        transform: translateX(0);
-        opacity: 1;
-    }
-}
-
-@keyframes slideOutRight {
-    from {
-        transform: translateX(0);
-        opacity: 1;
-    }
-    to {
-        transform: translateX(100%);
-        opacity: 0;
-    }
-}
-
-@keyframes slideIn {
-    from {
-        opacity: 0;
-        transform: translateY(10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-}
-
-@keyframes pulse {
-    0% { transform: scale(0.8); opacity: 0.8; }
-    50% { transform: scale(1.1); opacity: 1; }
-    100% { transform: scale(0.8); opacity: 0.8; }
-}
-
-/* Indicador de selección */
-.selection-indicator {
-    position: absolute;
-    top: -2px;
-    right: -2px;
-    width: 12px;
-    height: 12px;
-    background: #34a853;
-    border-radius: 50%;
-    border: 2px solid var(--bg-container);
-    animation: pulse 2s infinite;
-}
-
-/* Clase próxima */
-.upcoming-class {
-    border-left: 4px solid #FF9800 !important;
-}
-
-.upcoming-class::before {
-    content: '🔔 PRÓXIMA';
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    background: #FF9800;
-    color: white;
-    padding: 2px 8px;
-    border-radius: 10px;
-    font-size: 0.7em;
-    font-weight: bold;
-    animation: fadeIn 0.5s ease;
-}
-
-/* Ajustar scrollbars */
-.calendar-classes-list::-webkit-scrollbar,
-.preview-list::-webkit-scrollbar {
-    width: 4px;
-}
-
-.calendar-classes-list::-webkit-scrollbar-track,
-.preview-list::-webkit-scrollbar-track {
-    background: transparent;
-}
-
-.calendar-classes-list::-webkit-scrollbar-thumb,
-.preview-list::-webkit-scrollbar-thumb {
-    background: var(--primary-500);
-    border-radius: 2px;
-}
-
-footer {
-    padding: 20px;
-    text-align: center;
-    background: var(--bg-card);
-    color: var(--text-secondary);
-    font-size: 0.9em;
-    border-top: 1px solid var(--border-color);
-    margin-top: 40px;
-}
-
 /* ===== ESTILOS PARA EL MODAL DE INSCRIPCIÓN ===== */
 .fechas-modal {
     margin: 20px 0;
@@ -1747,37 +907,27 @@ footer {
     cursor: not-allowed;
 }
 
-/* Ajustes responsivos */
-@media (max-width: 1200px) {
-    .main-layout {
-        grid-template-columns: 1fr;
-        gap: 20px;
-    }
+/* ===== FOOTER ===== */
+footer {
+    padding: 20px;
+    text-align: center;
+    background: var(--bg-card);
+    color: var(--text-secondary);
+    font-size: 0.9em;
+    border-top: 1px solid var(--border-color);
+    margin-top: 40px;
+}
 
-    .logo[src] {
-        display: grid;
-        width: 100px;
-        height: auto;
-    }
-    
-    .right-column {
-        position: static;
-        height: auto;
-        max-height: none;
-        order: -1;
-    }
-    
-    .calendar-sidebar {
-        max-height: 600px;
-        height: auto;
-    }
-    
-    .class-card {
-        min-height: 180px;
-    }
-    
-    .calendar-class-card {
-        min-height: 130px;
+/* ===== ANIMACIONES ===== */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 1024px) {
+    .classes-grid {
+        grid-template-columns: repeat(3, 1fr);
     }
 }
 
@@ -1787,36 +937,36 @@ footer {
         text-align: center;
         gap: 20px;
     }
-    
+
     .header-text {
         margin-bottom: 0;
     }
-    
+
     .header-text h1 {
         font-size: 2em;
     }
-    
+
     .header-text p {
         font-size: 1.1em;
     }
-    
+
     .user-section {
         align-items: center;
         width: 100%;
         min-width: auto;
     }
-    
+
     .user-info {
         text-align: center;
         width: 100%;
     }
-    
+
     .user-actions {
         flex-direction: row;
         flex-wrap: wrap;
         justify-content: center;
     }
-    
+
     .update-profile-btn,
     .logout-btn,
     .admin-panel-btn {
@@ -1826,85 +976,40 @@ footer {
         font-size: 0.9em;
         padding: 10px 12px;
     }
-    
+
     .classes-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2, 1fr);
         gap: 20px;
     }
-    
+
     .modal-container {
         width: 95%;
         margin: 20px;
     }
-    
+
     .form-actions {
         flex-direction: column;
     }
-    
+
     .submit-btn,
     .cancel-btn,
     .delete-account-btn {
         width: 100%;
     }
-    
+
     .class-card {
         padding: 20px;
         min-height: 160px;
     }
-    
+
     .class-card h3 {
         font-size: 1.2em;
         min-height: 2.4em;
     }
-    
+
     .class-card p {
         font-size: 0.95em;
         min-height: 3.5em;
-    }
-    
-    .calendar-sidebar {
-        padding: 15px;
-    }
-    
-    .calendar-class-card {
-        padding: 15px;
-        min-height: 120px;
-    }
-    
-    .class-title {
-        font-size: 1em;
-        min-height: 2em;
-    }
-    
-    .class-details {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 6px;
-    }
-    
-    .detail-item {
-        width: auto;
-        justify-content: flex-start;
-    }
-    
-    .reminder-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-    
-    .calendar-success-message {
-        left: 20px;
-        right: 20px;
-        max-width: none;
-    }
-    
-    .calendar-settings {
-        padding: 15px;
-    }
-    
-    .calendar-header {
-        flex-direction: column;
-        gap: 10px;
-        text-align: center;
     }
 }
 
@@ -1912,133 +1017,42 @@ footer {
     .container {
         padding: 15px;
     }
-    
+
     .header-content {
         padding: 0 15px;
     }
-    
+
     .main-header {
         padding: 20px 0;
     }
-    
+
     .header-text h1 {
         font-size: 1.8em;
     }
-    
+
     .class-card {
         padding: 20px;
     }
-    
+
     .modal-header {
         padding: 20px;
     }
-    
+
     .modal-tab-content {
         padding: 20px;
     }
-    
+
     .classes-grid {
         grid-template-columns: 1fr;
     }
-    
+
     .class-card {
         min-height: 150px;
         padding: 15px;
     }
-    
+
     .class-card h3 {
         font-size: 1.1em;
         min-height: 2.2em;
     }
-    
-    .calendar-class-card {
-        min-height: 110px;
-    }
-    
-    .add-to-calendar-btn,
-    .download-selected-btn,
-    .download-all-btn {
-        padding: 10px;
-        font-size: 0.85em;
-        height: 36px;
-        min-height: 36px;
-    }
-    
-    .reminder-grid {
-        grid-template-columns: 1fr;
-    }
-    
-    .calendar-success-message {
-        flex-direction: column;
-        text-align: center;
-        gap: 10px;
-        top: 10px;
-        right: 10px;
-        left: 10px;
-    }
-    
-    .download-all-btn {
-        width: 100%;
-        justify-content: center;
-    }
-    
-    .calendar-success-message {
-        flex-direction: column;
-        text-align: center;
-        gap: 10px;
-        top: 10px;
-        right: 10px;
-        left: 10px;
-    }
-}
-
-/* Animación suave para transiciones */
-.user-info, .guest-info {
-    animation: fadeIn 0.5s ease;
-}
-
-/* Responsive para video */
-@media (max-width: 768px) {
-    .video-section {
-        margin: 30px 0;
-    }
-    
-    .video-container {
-        padding: 20px;
-        margin: 0 10px;
-    }
-    
-    .video-header h2 {
-        font-size: 1.3em;
-    }
-    
-    .video-header p {
-        font-size: 0.95em;
-    }
-}
-
-@media (max-width: 480px) {
-    .video-container {
-        padding: 15px;
-    }
-    
-    .video-header h2 {
-        font-size: 1.2em;
-    }
-}
-
-/* Asegurar que todo el contenido sea visible */
-.left-column, .right-column {
-    overflow: visible;
-}
-
-/* Mejorar la distribución del espacio */
-.calendar-classes-list {
-    flex: 1 1 auto;
-    overflow-y: auto;
-}
-
-/* Ajustar el espaciado interno */
-.calendar-class-card .class-info {
-    padding-bottom: 5px;
 }
