@@ -1,4 +1,4 @@
-console.log('📚 solicitud-material.js cargado - Versión independiente con fetch directo');
+console.log('📚 solicitud-material.js cargado - Versión independiente con localStorage');
 
 // ============================================
 // Funciones auxiliares basadas en authSystem
@@ -26,6 +26,14 @@ function getCurrentUserSafe() {
 
 function isLoggedInSafe() {
     return authSystem?.isLoggedIn ? authSystem.isLoggedIn() : false;
+}
+
+async function makeRequestSafe(endpoint, data = null, method = 'POST') {
+    if (!authSystem || !authSystem.makeRequest) {
+        throw new Error('authSystem no listo');
+    }
+    const fullEndpoint = endpoint.startsWith('/api') ? endpoint : `/api${endpoint}`;
+    return await authSystem.makeRequest(fullEndpoint, data, method);
 }
 
 function logoutSafe() {
@@ -422,10 +430,8 @@ class MaterialHistorico {
             instructores: selectOption.dataset.instructores
         };
 
-        // Guardar en localStorage inmediatamente
+        // Guardar y mostrar (independientemente del servidor)
         await this.guardarSolicitudLocal(claseData);
-        
-        // Mostrar material
         this.mostrarMaterial(claseData);
     }
 
@@ -457,7 +463,7 @@ class MaterialHistorico {
             console.error('Error guardando en localStorage:', e);
         }
 
-        // Intentar enviar al servidor en segundo plano
+        // Intentar enviar al servidor en segundo plano (no bloquea)
         this.enviarSolicitudServidor(solicitud).catch(err => {
             console.warn('No se pudo sincronizar con el servidor:', err);
         });
@@ -468,11 +474,8 @@ class MaterialHistorico {
             const user = getCurrentUserSafe();
             if (!user) return;
 
-            // Construir URL absoluta
             const url = `${window.location.origin}/api/material-historico/solicitudes`;
-            
             console.log('📤 Enviando solicitud a:', url);
-            console.log('📦 Datos:', solicitud);
 
             const response = await fetch(url, {
                 method: 'POST',
@@ -502,7 +505,6 @@ class MaterialHistorico {
             }
         } catch (error) {
             console.error('❌ Error al sincronizar con el servidor:', error);
-            // No mostramos error al usuario, ya se guardó localmente
         }
     }
 
@@ -577,21 +579,40 @@ class MaterialHistorico {
         }
         
         // Ocultar filtros y formulario, mostrar enlaces
-        document.querySelector('.filtros-container')?.style.setProperty('display', 'none');
-        document.getElementById('materialHistoricoForm')?.style.setProperty('display', 'none');
-        document.getElementById('sinClasesMensaje')?.style.setProperty('display', 'none');
-        document.getElementById('buscadorClasesContainer')?.style.setProperty('display', 'none');
+        const filtrosContainer = document.querySelector('.filtros-container');
+        if (filtrosContainer) filtrosContainer.style.display = 'none';
+        
+        const form = document.getElementById('materialHistoricoForm');
+        if (form) form.style.display = 'none';
+        
+        const sinClasesMensaje = document.getElementById('sinClasesMensaje');
+        if (sinClasesMensaje) sinClasesMensaje.style.display = 'none';
+        
+        const buscadorContainer = document.getElementById('buscadorClasesContainer');
+        if (buscadorContainer) buscadorContainer.style.display = 'none';
+        
         materialLinks.classList.add('visible');
         this.mostrarMensaje('✅ Material disponible', 'success');
     }
 
     ocultarMaterial() {
-        document.querySelector('.filtros-container')?.style.setProperty('display', 'block');
-        document.getElementById('materialHistoricoForm')?.style.setProperty('display', 'none');
-        document.getElementById('materialLinks')?.classList.remove('visible');
-        document.getElementById('claseSeleccionada').value = '';
-        document.getElementById('buscadorClasesContainer')?.style.setProperty('display', 'none');
-        document.getElementById('buscadorClases')?.value = '';
+        const filtrosContainer = document.querySelector('.filtros-container');
+        if (filtrosContainer) filtrosContainer.style.display = 'block';
+        
+        const form = document.getElementById('materialHistoricoForm');
+        if (form) form.style.display = 'none';
+        
+        const materialLinks = document.getElementById('materialLinks');
+        if (materialLinks) materialLinks.classList.remove('visible');
+        
+        const claseSelect = document.getElementById('claseSeleccionada');
+        if (claseSelect) claseSelect.value = '';
+        
+        const buscadorContainer = document.getElementById('buscadorClasesContainer');
+        if (buscadorContainer) buscadorContainer.style.display = 'none';
+        
+        const buscador = document.getElementById('buscadorClases');
+        if (buscador) buscador.value = '';
         
         const selectAno = document.getElementById('anoSeleccionado');
         const selectMes = document.getElementById('mesSeleccionado');
@@ -617,22 +638,16 @@ class MaterialHistorico {
             // Intentar cargar desde servidor
             let solicitudesServidor = [];
             try {
-                const url = `${window.location.origin}/api/material-historico/solicitudes`;
-                console.log('📥 Cargando solicitudes desde:', url);
-                
-                const response = await fetch(url, {
-                    headers: {
-                        'user-id': user._id
+                const response = await fetch(`${this.apiBaseUrl}/material-historico/solicitudes`, {
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'user-id': user._id 
                     }
                 });
-                
                 if (response.ok) {
-                    const contentType = response.headers.get('content-type');
-                    if (contentType && contentType.includes('application/json')) {
-                        const result = await response.json();
-                        if (result.success && result.data) {
-                            solicitudesServidor = result.data;
-                        }
+                    const result = await response.json();
+                    if (result.success && result.data) {
+                        solicitudesServidor = result.data;
                     }
                 }
             } catch (e) {
@@ -703,9 +718,16 @@ class MaterialHistorico {
 
     generarMaterialHTML(solicitud) {
         const enlaces = [];
-        if (solicitud.youtube) enlaces.push(`<a href="${solicitud.youtube}" target="_blank">▶️ YouTube</a>`);
-        if (solicitud.powerpoint) enlaces.push(`<a href="${solicitud.powerpoint}" target="_blank">📊 Presentacion</a>`);
-        return enlaces.length ? enlaces.join(' | ') : '<span>Material disponible</span>';
+        if (solicitud.youtube) {
+            enlaces.push(`<a href="${solicitud.youtube}" target="_blank" title="Ver en YouTube">▶️ YouTube</a>`);
+        }
+        if (solicitud.powerpoint) {
+            enlaces.push(`<a href="${solicitud.powerpoint}" target="_blank" title="Ver presentación">📊 Presentacion</a>`);
+        }
+        if (enlaces.length === 0) {
+            return '<span style="color: #666;">Material disponible</span>';
+        }
+        return enlaces.join(' | ');
     }
 
     mostrarMensaje(mensaje, tipo) {
