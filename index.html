@@ -131,6 +131,25 @@
 
     </div> <!-- Cierre del container -->
 
+    <!-- Modal de inscripción (agregado) -->
+    <div id="modalInscripcion" class="modal-overlay" style="display: none;">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h2>Inscripción a clase</h2>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <h3 id="modalClaseNombre"></h3>
+                <div class="fechas-modal">
+                    <p><strong>Apertura:</strong> <span id="modalFechaApertura"></span></p>
+                    <p><strong>Cierre:</strong> <span id="modalFechaCierre"></span></p>
+                </div>
+                <button id="btnUnirse" class="btn-unirse">Unirse a la clase</button>
+            </div>
+            <div id="modalMensaje" class="mensaje" style="display: none;"></div>
+        </div>
+    </div>
+
     <div id="updateProfileModal" class="modal-overlay" style="display: none;">
         <!-- Mantener el contenido existente del modal -->
         <div class="modal-container">
@@ -273,12 +292,168 @@
     <script src="/js/profile-updater.js"></script>
     <script src="/js/calendar.js"></script>
 
-    <!-- Script para carga dinámica de clases - CON SOPORTE PARA formularios.html -->
+    <!-- Script para carga dinámica de clases y modal de inscripción -->
 <script>
     // Variable para evitar múltiples cargas
     let clasesCargadas = false;
     let timeoutCarga = null;
     let intervaloVerificacion = null;
+    let claseSeleccionada = null; // Para guardar la clase actual del modal
+
+    // Elementos del modal
+    const modal = document.getElementById('modalInscripcion');
+    const modalClaseNombre = document.getElementById('modalClaseNombre');
+    const modalFechaApertura = document.getElementById('modalFechaApertura');
+    const modalFechaCierre = document.getElementById('modalFechaCierre');
+    const btnUnirse = document.getElementById('btnUnirse');
+    const modalMensaje = document.getElementById('modalMensaje');
+
+    // Cerrar modal
+    function cerrarModal() {
+        modal.style.display = 'none';
+        modalMensaje.style.display = 'none';
+        btnUnirse.disabled = false;
+        btnUnirse.textContent = 'Unirse a la clase';
+    }
+
+    // Mostrar mensaje en el modal
+    function mostrarMensajeModal(texto, tipo) {
+        modalMensaje.textContent = texto;
+        modalMensaje.className = `mensaje ${tipo}`;
+        modalMensaje.style.display = 'block';
+        setTimeout(() => {
+            modalMensaje.style.display = 'none';
+        }, 5000);
+    }
+
+    // Cargar detalles de la clase y mostrar modal
+    async function abrirModalClase(claseId) {
+        try {
+            modalClaseNombre.textContent = 'Cargando...';
+            modal.style.display = 'flex';
+
+            // Intentar obtener clase pública
+            let clase = null;
+            try {
+                const res = await fetch(`/api/clases-publicas/${claseId}`);
+                const data = await res.json();
+                if (data.success && data.data) clase = data.data;
+            } catch (e) { /* ignorar */ }
+
+            if (!clase) {
+                try {
+                    const res = await fetch(`/api/clases-historicas/${claseId}`);
+                    const data = await res.json();
+                    if (data.success && data.data) clase = data.data;
+                } catch (e) { /* ignorar */ }
+            }
+
+            if (!clase) throw new Error('No se pudo cargar la información de la clase');
+
+            claseSeleccionada = clase;
+            modalClaseNombre.textContent = clase.nombre || 'Clase';
+
+            // Formatear fechas (usar lo que venga del servidor o valores por defecto)
+            let apertura = 'No especificada';
+            let cierre = 'No especificado';
+            if (clase.fechaApertura) {
+                apertura = new Date(clase.fechaApertura).toLocaleString('es-AR');
+            } else if (clase.fechaClase) {
+                apertura = new Date(clase.fechaClase).toLocaleString('es-AR');
+            }
+            if (clase.fechaCierre) {
+                cierre = new Date(clase.fechaCierre).toLocaleString('es-AR');
+            } else if (clase.fechaClase) {
+                const fecha = new Date(clase.fechaClase);
+                fecha.setHours(20, 0, 0, 0);
+                cierre = fecha.toLocaleString('es-AR');
+            }
+            modalFechaApertura.textContent = apertura;
+            modalFechaCierre.textContent = cierre;
+
+        } catch (error) {
+            console.error('Error al cargar clase:', error);
+            alert('Error al cargar la información de la clase');
+            cerrarModal();
+        }
+    }
+
+    // Función para inscribirse y redirigir
+    async function inscribirse() {
+        if (!claseSeleccionada) return;
+
+        btnUnirse.disabled = true;
+        btnUnirse.textContent = 'Procesando...';
+
+        // Verificar login
+        if (!authSystem.isLoggedIn()) {
+            try {
+                await authSystem.showLoginModal();
+                // Después del login, reintentar
+                if (!authSystem.isLoggedIn()) {
+                    mostrarMensajeModal('Debes iniciar sesión', 'error');
+                    btnUnirse.disabled = false;
+                    btnUnirse.textContent = 'Unirse a la clase';
+                    return;
+                }
+            } catch (error) {
+                console.log('Login cancelado');
+                btnUnirse.disabled = false;
+                btnUnirse.textContent = 'Unirse a la clase';
+                return;
+            }
+        }
+
+        const user = authSystem.getCurrentUser();
+
+        try {
+            const inscripcionData = {
+                usuarioId: user._id,
+                clase: claseSeleccionada.nombre,
+                turno: user.turno,
+                fecha: new Date().toISOString()
+            };
+            if (claseSeleccionada._id) inscripcionData.claseId = claseSeleccionada._id;
+
+            const response = await fetch('/api/inscripciones', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'user-id': user._id 
+                },
+                body: JSON.stringify(inscripcionData)
+            });
+            const result = await response.json();
+
+            // Si el servidor responde con éxito o ya estaba inscrito, redirigimos
+            if (result.success || (result.message && result.message.includes('Ya estás inscrito'))) {
+                // Redirigir al enlace de la clase
+                const enlace = claseSeleccionada.enlaceFormulario || claseSeleccionada.enlaces?.youtube || '';
+                if (enlace) {
+                    window.location.href = enlace;
+                } else {
+                    alert('Inscripción registrada, pero no hay enlace disponible.');
+                    cerrarModal();
+                }
+            } else {
+                throw new Error(result.message || 'Error al inscribirse');
+            }
+        } catch (error) {
+            console.error('Error al inscribirse:', error);
+            mostrarMensajeModal(error.message, 'error');
+            btnUnirse.disabled = false;
+            btnUnirse.textContent = 'Unirse a la clase';
+        }
+    }
+
+    // Configurar eventos del modal
+    document.querySelectorAll('.close-modal, .cancel-btn').forEach(btn => {
+        btn.addEventListener('click', cerrarModal);
+    });
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) cerrarModal();
+    });
+    btnUnirse.addEventListener('click', inscribirse);
 
     // Función para verificar si una clase debe mostrarse
     function claseDebeMostrarse(fechaClase) {
@@ -367,7 +542,7 @@
             // Ordenar clases por fecha (más próximas primero)
             const clasesOrdenadas = ordenarClasesPorFecha(clasesVisibles);
 
-            // Generar HTML - ¡ESTA ES LA PARTE IMPORTANTE!
+            // Generar HTML - AHORA LLAMA A abrirModalClase
             let htmlString = '';
             clasesOrdenadas.forEach(clase => {
                 let fechaFormateada = 'Fecha no disponible';
@@ -386,11 +561,8 @@
                     instructoresTexto = clase.instructores.join('<br>');
                 }
 
-                // 🔥 CAMBIO IMPORTANTE: Ahora apuntamos a formularios.html con el ID
-                const urlFormulario = `/formularios.html?claseId=${clase._id}&nombre=${encodeURIComponent(clase.nombre)}`;
-                
                 htmlString += `
-                    <div class="class-card" onclick="window.location.href='${urlFormulario}'">
+                    <div class="class-card" onclick="abrirModalClase('${clase._id}')">
                         <h3>${clase.nombre}</h3>
                         <p>${instructoresTexto}</p>
                         ${clase.lugar ? `<p><small class="class-lugar">📍 ${clase.lugar}</small></p>` : ''}
@@ -421,7 +593,7 @@
             const onclickAttr = clase.getAttribute('onclick');
             if (onclickAttr) {
                 // Extraer el ID de la URL
-                const match = onclickAttr.match(/id=([a-f0-9]+)/);
+                const match = onclickAttr.match(/abrirModalClase\('([a-f0-9]+)'\)/);
                 if (match && match[1]) {
                     // Aquí necesitarías tener la fecha almacenada de alguna manera
                     // Por ahora, simplemente recargamos todas las clases
