@@ -8,7 +8,7 @@
     --link-border: rgba(255, 255, 255, 0.2);
 }
 
-/* ===== ESTILOS DE CONTENEDOR (heredados de formularios.css) ===== */
+/* ===== ESTILOS DE CONTENEDOR Y TÍTULOS (heredados de formularios.css) ===== */
 .container {
     max-width: 600px;
     margin: 0 auto;
@@ -16,6 +16,21 @@
     padding: 30px;
     border-radius: 15px;
     box-shadow: var(--shadow-lg);
+}
+
+h1 {
+    text-align: center;
+    color: var(--text-primary);
+    margin-bottom: 10px;
+    font-size: 2em;
+}
+
+h2 {
+    text-align: center;
+    color: var(--text-secondary);
+    margin-bottom: 20px;
+    font-size: 1.4em;
+    font-weight: normal;
 }
 
 .back-btn-container {
@@ -50,10 +65,44 @@
     box-shadow: var(--shadow-md);
 }
 
-/* Grupos de formulario */
+/* ===== ESTILOS DE FORMULARIO ===== */
 .form-group {
     margin-bottom: 25px;
     display: block;
+}
+
+label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: bold;
+    color: var(--text-primary);
+}
+
+input[type="email"],
+input[type="text"],
+input[type="number"],
+select {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 16px;
+    transition: border-color 0.3s ease;
+    background: var(--bg-container);
+    color: var(--text-primary);
+}
+
+input:focus,
+select:focus {
+    outline: none;
+    border-color: var(--accent-color);
+}
+
+input[readonly],
+select[readonly] {
+    background-color: var(--bg-card);
+    color: var(--text-secondary);
+    cursor: not-allowed;
 }
 
 .field-info {
@@ -68,7 +117,32 @@
     display: block;
 }
 
-/* ===== ESTILOS EXISTENTES (específicos de solicitud-material) ===== */
+/* ===== BOTÓN PRINCIPAL ===== */
+.submit-btn {
+    width: 100%;
+    background: linear-gradient(135deg, var(--accent-color) 0%, var(--accent-hover) 100%);
+    color: white;
+    padding: 15px;
+    border: none;
+    border-radius: 8px;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+}
+
+.submit-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.submit-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* ===== ESTILOS ESPECÍFICOS DE SOLICITUD-MATERIAL ===== */
 .material-links {
     margin-top: 30px;
     padding: 30px;
@@ -278,6 +352,10 @@
     animation: slideDown 0.5s ease;
     border: 2px solid var(--border-color);
     transition: all 0.3s ease;
+    margin-bottom: 20px;
+    padding: 20px;
+    background: var(--bg-card);
+    border-radius: 10px;
 }
 
 .filtros-container:focus-within {
@@ -292,6 +370,9 @@
     cursor: pointer;
     font-size: 16px;
     transition: all 0.3s ease;
+    padding: 12px;
+    border-radius: 8px;
+    width: 100%;
 }
 
 .filtro-select:focus {
@@ -314,10 +395,16 @@
 .sin-clases-mensaje {
     animation: fadeIn 0.5s ease;
     border: 2px dashed var(--border-color);
+    text-align: center;
+    padding: 40px;
+    background: var(--bg-card);
+    border-radius: 10px;
+    margin-top: 20px;
 }
 
 .sin-clases-mensaje h3 {
     color: var(--text-primary);
+    margin-bottom: 10px;
 }
 
 .sin-clases-mensaje p {
@@ -338,17 +425,6 @@
 @keyframes fadeIn {
     from { opacity: 0; }
     to { opacity: 1; }
-}
-
-@keyframes slideDown {
-    from {
-        opacity: 0;
-        transform: translateY(-20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
 }
 
 /* ===== RESPONSIVE ===== */
