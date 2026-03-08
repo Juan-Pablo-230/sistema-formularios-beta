@@ -517,7 +517,7 @@ app.get('/api/clases-historicas', async (req, res) => {
     }
 });
 
-// Obtener una clase específica por ID
+// Obtener una clase específica por ID (histórica)
 app.get('/api/clases-historicas/:id', async (req, res) => {
     try {
         const { id } = req.params;
@@ -545,7 +545,8 @@ app.get('/api/clases-historicas/:id', async (req, res) => {
         
         res.json({ 
             success: true, 
-            data: clase 
+            data: clase,
+            serverTime: Date.now()  // Incluimos serverTime por si acaso
         });
         
     } catch (error) {
@@ -1498,7 +1499,11 @@ app.get('/api/clases-publicas/publicadas', async (req, res) => {
             .sort({ fechaClase: -1 })
             .toArray();
         
-        res.json({ success: true, data: clases });
+        res.json({ 
+            success: true, 
+            data: clases,
+            serverTime: Date.now()  // <-- NUEVO: hora del servidor
+        });
     } catch (error) {
         console.error('❌ Error obteniendo clases publicadas:', error);
         res.status(500).json({ success: false, message: 'Error interno del servidor' });
@@ -1572,7 +1577,11 @@ app.get('/api/clases-publicas/:id', async (req, res) => {
             });
         }
         
-        res.json({ success: true, data: clase });
+        res.json({ 
+            success: true, 
+            data: clase,
+            serverTime: Date.now()  // <-- NUEVO: hora del servidor
+        });
         
     } catch (error) {
         console.error('❌ Error obteniendo clase por ID:', error);
@@ -1809,43 +1818,6 @@ app.put('/api/clases-publicas/:id/visibilidad', async (req, res) => {
     } catch (error) {
         console.error('❌ Error cambiando visibilidad:', error);
         res.status(500).json({ success: false, message: 'Error interno del servidor' });
-    }
-});
-
-app.get('/api/clases-publicas/:id', async (req, res) => {
-    try {
-        const { id } = req.params;
-        console.log(`📥 GET /api/clases-publicas/${id}`);
-        
-        if (!ObjectId.isValid(id)) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'ID de clase inválido' 
-            });
-        }
-        
-        const db = await mongoDB.getDatabaseSafe('formulario');
-        
-        const clase = await db.collection('clases-publicas').findOne({ 
-            _id: new ObjectId(id) 
-        });
-        
-        if (!clase) {
-            return res.status(404).json({ 
-                success: false, 
-                message: 'Clase no encontrada' 
-            });
-        }
-        
-        res.json({ success: true, data: clase });
-        
-    } catch (error) {
-        console.error('❌ Error obteniendo clase por ID:', error);
-        res.status(500).json({ 
-            success: false, 
-            message: 'Error interno del servidor',
-            error: error.message 
-        });
     }
 });
 
@@ -2302,45 +2274,25 @@ app.get('/api/init-db', async (req, res) => {
             }
         }
         
-        // Crear usuario admin por defecto si no existe
-        const adminExists = await db.collection('usuarios').findOne({ email: 'admin@example.com' });
-        if (!adminExists) {
-            const adminUser = {
-                apellidoNombre: 'Administrador',
-                legajo: '99999',
-                turno: 'Turno mañana',
-                email: 'admin@example.com',
-                password: 'admin123',
-                role: 'admin',
-                fechaRegistro: new Date()
-            };
+        // Verificar/crear colección de clases públicas
+        const clasesPublicasExists = await db.listCollections({ name: 'clases-publicas' }).hasNext();
+        if (!clasesPublicasExists) {
+            console.log('📝 Creando colección "clases-publicas"...');
+            await db.createCollection('clases-publicas');
             
-            await db.collection('usuarios').insertOne(adminUser);
-            console.log('✅ Usuario admin creado por defecto');
-        }
-        
-        // Crear clase por defecto si no existe
-        const claseExists = await db.collection('clases').findOne({ 
-            nombre: 'Aislamientos y casos clínicos' 
-        });
-        if (!claseExists) {
-            const clase = {
-                nombre: "Aislamientos y casos clínicos",
-                descripcion: "Lic. Romina Seminario, Lic. Mirta Díaz",
-                fechaClase: new Date('2025-12-04'),
-                fechaCierre: new Date('2025-12-04T10:00:00'),
-                activa: true,
-                estado: 'publicada',
-                instructores: ["Lic. Romina Seminario", "Lic. Mirta Díaz"]
-            };
+            await db.collection('clases-publicas').createIndex({ fechaClase: -1 });
+            await db.collection('clases-publicas').createIndex({ nombre: 1 });
+            await db.collection('clases-publicas').createIndex({ publicada: 1 });
             
-            await db.collection('clases').insertOne(clase);
-            console.log('✅ Clase creada por defecto');
+            console.log('✅ Colección "clases-publicas" creada con índices');
+        } else {
+            console.log('✅ Colección "clases-publicas" ya existe');
         }
         
         res.json({ 
             success: true, 
-            message: 'Base de datos inicializada correctamente' 
+            message: 'Base de datos inicializada correctamente',
+            collections: collections
         });
         
     } catch (error) {
@@ -2411,5 +2363,4 @@ async function startServer() {
     }
 }
 
-// Iniciar servidor
 startServer();

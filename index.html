@@ -227,116 +227,10 @@
     <script src="/js/profile-updater.js"></script>
     <!-- calendar.js eliminado -->
 
-    <!-- Script principal (con toda la lógica y hora sincronizada) -->
+    <!-- Script principal (con toda la lógica y hora sincronizada desde el servidor) -->
     <script>
         // ============================================
-        // Sistema de Hora Sincronizada MEJORADO (con respaldo local y espera)
-        // ============================================
-        let timeOffset = 0; // offset = serverTime - localTime
-        let syncCompleted = false;
-        let syncError = null;
-
-        async function syncWithNetworkTime(useLocalFallback = true) {
-            console.log('🔄 Sincronizando hora...');
-
-            // 1. Intentar con endpoint propio (más confiable)
-            try {
-                const start = Date.now();
-                const res = await fetch('/api/current-time', { cache: 'no-cache' });
-                if (res.ok) {
-                    const data = await res.json();
-                    if (data.success && data.timestamp) {
-                        const serverTime = data.timestamp;
-                        const end = Date.now();
-                        const rtt = end - start;
-                        timeOffset = serverTime - (start + rtt / 2);
-                        console.log(`✅ Hora sincronizada con servidor local. Offset: ${timeOffset}ms`);
-                        syncCompleted = true;
-                        return true;
-                    }
-                }
-            } catch (e) {
-                console.warn('⚠️ No se pudo conectar al endpoint local:', e.message);
-            }
-
-            // 2. Respaldo con APIs externas
-            const apis = [
-                'https://worldtimeapi.org/api/timezone/Etc/UTC',
-                'https://timeapi.io/api/Time/current/zone?timeZone=UTC'
-            ];
-
-            for (const api of apis) {
-                try {
-                    const start = Date.now();
-                    const res = await fetch(api, { cache: 'no-cache' });
-                    if (!res.ok) continue;
-
-                    // Intentar leer cabecera Date
-                    const dateHeader = res.headers.get('date');
-                    if (dateHeader) {
-                        const serverTime = new Date(dateHeader).getTime();
-                        const end = Date.now();
-                        const rtt = end - start;
-                        timeOffset = serverTime - (start + rtt / 2);
-                        console.log(`✅ Hora sincronizada vía cabecera Date. Offset: ${timeOffset}ms`);
-                        syncCompleted = true;
-                        return true;
-                    }
-
-                    // Si no hay cabecera, leer body (worldtimeapi)
-                    if (api.includes('worldtimeapi')) {
-                        const data = await res.json();
-                        if (data && data.datetime) {
-                            const serverTime = new Date(data.datetime).getTime();
-                            const end = Date.now();
-                            const rtt = end - start;
-                            timeOffset = serverTime - (start + rtt / 2);
-                            console.log(`✅ Hora sincronizada vía worldtimeapi. Offset: ${timeOffset}ms`);
-                            syncCompleted = true;
-                            return true;
-                        }
-                    }
-                } catch (e) {
-                    console.warn(`⏳ Fallo con ${api}:`, e.message);
-                }
-            }
-
-            // 3. Si todo falla
-            syncError = 'No se pudo sincronizar la hora con ningún servidor.';
-            if (useLocalFallback) {
-                timeOffset = 0;
-                console.warn('⚠️ Usando hora local del equipo (offset = 0).');
-            }
-            syncCompleted = true; // Marcamos como completado aunque haya error
-            return false;
-        }
-
-        function getCurrentNetworkTime() {
-            return Date.now() + timeOffset;
-        }
-
-        function getCurrentNetworkDate() {
-            return new Date(getCurrentNetworkTime());
-        }
-
-        // Esperar a que la sincronización termine antes de continuar
-        async function waitForSync() {
-            if (syncCompleted) return;
-            // Iniciar sincronización y esperar
-            await syncWithNetworkTime(true);
-        }
-
-        // Exponer funciones globalmente (necesario para el resto del código)
-        window.getCurrentNetworkTime = getCurrentNetworkTime;
-        window.getCurrentNetworkDate = getCurrentNetworkDate;
-        window.waitForSync = waitForSync;
-
-        // Llamar a la sincronización al cargar la página (no bloqueante, pero luego esperamos)
-        syncWithNetworkTime(true);
-        setInterval(() => syncWithNetworkTime(true), 3600000);
-
-        // ============================================
-        // Resto del código (con las modificaciones)
+        // Variables globales
         // ============================================
         let clasesCargadas = false;
         let timeoutCarga = null;
@@ -369,7 +263,7 @@
             }, 5000);
         }
 
-        // Funciones para ICS (ahora usan hora sincronizada para dtstamp)
+        // Funciones para ICS (usamos hora local para la creación del archivo)
         function generarICS(clase) {
             let inicio, fin;
             if (clase.fechaApertura) {
@@ -377,7 +271,7 @@
             } else if (clase.fechaClase) {
                 inicio = new Date(clase.fechaClase);
             } else {
-                inicio = getCurrentNetworkDate(); // Usar hora sincronizada
+                inicio = new Date(); // fallback a hora local
             }
 
             if (clase.fechaCierre) {
@@ -390,7 +284,7 @@
                 return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
             }
 
-            const now = getCurrentNetworkDate(); // Usar hora sincronizada
+            const now = new Date(); // hora local, no crítica
             const dtstamp = formatDateForICS(now);
             const dtstart = formatDateForICS(inicio);
             const dtend = formatDateForICS(fin);
@@ -458,14 +352,6 @@
             return { apertura, cierre };
         }
 
-        // Determinar si la clase debe mostrarse en el grid
-        function claseEsVisible(clase) {
-            const { cierre } = obtenerTimestampsClase(clase);
-            if (!cierre) return true;
-            const ahora = getCurrentNetworkTime(); // Usar hora sincronizada
-            return ahora < cierre;
-        }
-
         async function abrirModalClase(claseId) {
             try {
                 modalClaseNombre.textContent = 'Cargando...';
@@ -475,17 +361,29 @@
                 btnRecordatorio.style.display = 'none';
 
                 let clase = null;
+                let serverTime = null;
+
+                // Intentar obtener clase pública con serverTime
                 try {
                     const res = await fetch(`/api/clases-publicas/${claseId}`);
                     const data = await res.json();
-                    if (data.success && data.data) clase = data.data;
+                    if (data.success && data.data) {
+                        clase = data.data;
+                        serverTime = data.serverTime; // Hora exacta del servidor
+                    }
                 } catch (e) {}
 
+                // Si no se encontró, intentar con clase histórica (puede que no tenga serverTime)
                 if (!clase) {
                     try {
                         const res = await fetch(`/api/clases-historicas/${claseId}`);
                         const data = await res.json();
-                        if (data.success && data.data) clase = data.data;
+                        if (data.success && data.data) {
+                            clase = data.data;
+                            // Si la API histórica devuelve serverTime, lo usamos; si no, usamos hora local con advertencia
+                            serverTime = data.serverTime || Date.now();
+                            console.warn('⚠️ Usando hora local para clase histórica, puede haber diferencias.');
+                        }
                     } catch (e) {}
                 }
 
@@ -508,7 +406,7 @@
                 modalFechaApertura.textContent = apertura ? new Date(apertura).toLocaleString('es-AR', opcionesFormato) : 'No especificada';
                 modalFechaCierre.textContent = cierre ? new Date(cierre).toLocaleString('es-AR', opcionesFormato) : 'No especificado';
 
-                const ahora = getCurrentNetworkTime(); // Usar hora sincronizada
+                const ahora = serverTime || Date.now(); // Usar serverTime si está disponible
 
                 if (apertura && ahora < apertura) {
                     estadoClase.textContent = '📅 La clase aún no ha comenzado. Puedes agregar un recordatorio.';
@@ -561,7 +459,7 @@
                     usuarioId: user._id,
                     clase: claseSeleccionada.nombre,
                     turno: user.turno,
-                    fecha: getCurrentNetworkDate().toISOString() // Usar hora sincronizada
+                    fecha: new Date().toISOString() // Hora local, no crítica
                 };
                 if (claseSeleccionada._id) inscripcionData.claseId = claseSeleccionada._id;
 
@@ -628,9 +526,18 @@
                 if (!result.success || !result.data) throw new Error(result.message || 'Error al cargar las clases');
 
                 let clases = result.data;
-                console.log(`📊 Clases encontradas (sin filtrar): ${clases.length}`);
+                const ahora = result.serverTime; // Hora exacta del servidor
 
-                const clasesVisibles = clases.filter(clase => claseEsVisible(clase));
+                console.log(`📊 Clases encontradas (sin filtrar): ${clases.length}`);
+                console.log(`🕒 Hora del servidor: ${new Date(ahora).toLocaleString()}`);
+
+                // Filtrar clases visibles usando 'ahora' (timestamp del servidor)
+                const clasesVisibles = clases.filter(clase => {
+                    const { cierre } = obtenerTimestampsClase(clase);
+                    if (!cierre) return true;
+                    return ahora < cierre; // Comparar con timestamp del servidor
+                });
+
                 console.log(`📊 Clases visibles después de filtrar: ${clasesVisibles.length}`);
 
                 if (clasesVisibles.length === 0) {
@@ -686,41 +593,8 @@
             cargarClasesPublicas(true);
         }
 
-        document.addEventListener('DOMContentLoaded', async function() {
-            console.log('📄 DOM cargado, sincronizando hora...');
-            
-            // Mostrar mensaje de sincronización en el grid
-            const grid = document.getElementById('dynamic-classes-grid');
-            if (grid) grid.innerHTML = '<div class="loading-classes">Sincronizando hora del sistema...</div>';
-
-            // Esperar sincronización con un timeout de 5 segundos
-            await Promise.race([
-                waitForSync(),
-                new Promise(resolve => setTimeout(resolve, 5000))
-            ]);
-
-            if (syncError) {
-                console.warn(syncError);
-                // Opcional: mostrar advertencia al usuario
-                const warning = document.createElement('div');
-                warning.className = 'time-warning';
-                warning.innerHTML = '⚠️ No se pudo sincronizar la hora. Algunas fechas pueden no ser exactas.';
-                warning.style.cssText = `
-                    background: #fff3cd;
-                    color: #856404;
-                    padding: 10px;
-                    border-radius: 5px;
-                    margin: 10px 0;
-                    text-align: center;
-                    font-weight: bold;
-                `;
-                const header = document.querySelector('.main-header');
-                if (header) header.appendChild(warning);
-            }
-
-            console.log('⏱️ Offset de tiempo:', timeOffset, 'ms');
-            
-            // Ahora cargar clases
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('📄 DOM cargado, cargando clases...');
             timeoutCarga = setTimeout(() => {
                 cargarClasesPublicas();
                 intervaloVerificacion = setInterval(verificarClasesExpiradas, 60000);
