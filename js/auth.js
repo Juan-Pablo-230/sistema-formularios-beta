@@ -368,10 +368,8 @@ class AuthSystem {
             const advertencia = confirm(
                 '⚠️  CAMBIO DE CONTRASEÑA  ⚠️\n\n' +
                 'Se detecto una vulnerabilidad en el sistema. Esta ya esta corregida, pero necesitas cambiar tu contraseña para tu seguridad.\n\n' +
-                '❌ NO podrás acceder a la VERSIÓN ESTABLE\n' +
-                '   (sistema-formularios-production)\n\n' +
+                '❌ NO podrás acceder a la VERSIÓN ESTABLE hasta que la modificacion este aplicada en esa area\n' +
                 '✅ Solo podrás usar la VERSIÓN BETA\n' +
-                '   (sistema-formulario-beta)\n\n' +
                 '¿Estás seguro de continuar?'
             );
 
@@ -379,7 +377,7 @@ class AuthSystem {
                 this.showMigrationMessage(overlay, 'Cambio de contraseña cancelado', 'info');
                     setTimeout(() => {
                         window.location.href = 'https://sistema-formularios-production.up.railway.app/'; // Redirige a la versión estable
-                    }, 2000);
+                    }, 1000);
                 return;
             }
             
