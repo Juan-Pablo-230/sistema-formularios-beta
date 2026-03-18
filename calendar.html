@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendario Educativo</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="/css/calendar.css">
+    <link rel="shortcut icon" href="/img/logo.png" type="image/x-icon">
+</head>
+<body>
+    <div class="container calendar-container">
+        <header class="calendar-header">
+            <h1>📅 Calendario Educativo</h1>
+            <p>Visualiza todas las clases programadas y material grabado disponible</p>
+            <button id="btnVolverCalendar" class="btn-volver" onclick="window.location.href='/index.html'">
+                <span class="btn-icon">←</span> Volver al Menú Principal
+            </button>
+        </header>
+
+        <!-- Sección para destacar la próxima clase (remarcada en amarillo) -->
+        <div id="proximaClaseSection" class="proxima-clase-card" style="display: none;">
+            <div class="proxima-clase-header">
+                <span class="proxima-icon">⭐</span>
+                <h2>PRÓXIMA CLASE</h2>
+                <span class="proxima-icon">⭐</span>
+            </div>
+            <div id="proximaClaseInfo" class="proxima-clase-info">
+                <!-- La información de la próxima clase se cargará aquí -->
+            </div>
+        </div>
+
+        <!-- Filtros rápidos -->
+        <div class="calendar-filtros">
+            <button class="filtro-btn active" data-filtro="todas">📋 Todas</button>
+            <button class="filtro-btn" data-filtro="publicas">📢 En Vivo</button>
+            <button class="filtro-btn" data-filtro="historicas">📚 Grabadas</button>
+            <button class="filtro-btn" data-filtro="proximas">🔜 Próximas</button>
+        </div>
+
+        <!-- Grid donde se mostrarán todas las clases -->
+        <div class="calendar-grid" id="calendar-clases-grid">
+            <div class="loading-classes">Cargando calendario de clases...</div>
+        </div>
+
+        <div id="calendarMensaje" class="status-message" style="display: none;"></div>
+    </div>
+
+    <script src="/js/auth.js"></script>
+    <script src="/js/calendar.js"></script>
+</body>
+</html>

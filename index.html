@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema de Asistencia - Beta</title>
     <link rel="stylesheet" href="/css/styles.css">
     <link rel="shortcut icon" href="/img/logo.png" type="image/x-icon">
 </head>
@@ -15,7 +14,7 @@
                     <img src="/img/logo.png" alt="logo" class="logo">
                 </div>
                 <div class="header-text">
-                    <h1>Sistema de inscripciones - Beta</h1>
+                    <h1></h1>
                     <p>Seleccione la clase para registrar la inscripcion</p>
                     <div id="materialButtonContainer" style="display: none;">
                         <a href="/solicitud-material.html" class="btn-material">📚 Solicitar material de la clase</a>
@@ -53,7 +52,7 @@
             <div class="loading-classes">Cargando clases disponibles...</div>
         </div>
 
-        <!-- Sección de Video (opcional, se mantiene) -->
+        <!-- Sección de Video -->
         <div class="video-section">
             <div class="video-container">
                 <div class="video-header">
@@ -100,7 +99,7 @@
         <!-- Contenido del modal de perfil (sin cambios) -->
         <div class="modal-container">
             <div class="modal-header">
-                <h2>✏️ Mi perfil - Version Beta</h2>
+                <h2>✏️ Mi perfil.</h2>
                 <button class="close-modal">&times;</button>
             </div>
             
@@ -221,11 +220,14 @@
         </div>
     </div>
 
-    <footer><a href="https://sistema-formularios-production.up.railway.app/">Ir a la version estable del sistema</a></footer>
-
+    <footer><p></p></footer>
     <script src="/js/auth.js"></script>
     <script src="/js/profile-updater.js"></script>
-    <!-- calendar.js eliminado -->
+    <script>
+        if (versionBeta == true) {
+            alert("Esta es una versión BETA del sistema de inscripciones. Puede contener errores o funcionalidades incompletas. Por favor, utilícelo con precaución y reporte cualquier problema al desarrollador.")
+        }
+    </script>
 
     <!-- Script principal (con toda la lógica y hora sincronizada desde el servidor) -->
     <script>
@@ -409,14 +411,14 @@
                 const ahora = serverTime || Date.now(); // Usar serverTime si está disponible
 
                 if (apertura && ahora < apertura) {
-                    estadoClase.textContent = '📅 La clase aún no ha comenzado. Puedes agregar un recordatorio.';
+                    estadoClase.textContent = '📅 La clase no comenzo. Agrega un recordatorio a tu calendario personal para ser notificado de su apertura.';
                     estadoClase.className = 'estado-clase proximamente';
                     btnRecordatorio.style.display = 'block';
                 } else if (cierre && ahora > cierre) {
-                    estadoClase.textContent = '🔒 La clase ya ha cerrado.';
+                    estadoClase.textContent = '🔒 La clase a finalizado, no se aceptan nuevas inscripciones.';
                     estadoClase.className = 'estado-clase cerrada';
                 } else {
-                    estadoClase.textContent = '✅ La clase está abierta. Haz clic para unirte.';
+                    estadoClase.textContent = '✅ Haz clic aqui para unirte a la clase.';
                     estadoClase.className = 'estado-clase abierta';
                     btnUnirse.style.display = 'block';
                 }
@@ -620,7 +622,7 @@
     </script>
 
     <script>
-        alert("Esta es una versión BETA del sistema de inscripciones. Puede contener errores o funcionalidades incompletas. Por favor, utilícelo con precaución y reporte cualquier problema al desarrollador.");
+
     </script>
 </body>
 </html>

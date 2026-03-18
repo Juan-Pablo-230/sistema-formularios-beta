@@ -1,0 +1,479 @@
+/* ===== calendar.css ===== */
+.calendar-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    animation: fadeIn 0.5s ease;
+}
+
+/* Header del calendario */
+.calendar-header {
+    text-align: center;
+    margin-bottom: 30px;
+    padding: 30px 25px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 15px;
+    box-shadow: var(--shadow-lg);
+}
+
+.calendar-header h1 {
+    margin: 0 0 10px 0;
+    font-size: 2.5em;
+    font-weight: 800;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.calendar-header p {
+    margin: 0 0 20px 0;
+    font-size: 1.1em;
+    opacity: 0.95;
+}
+
+#btnVolverCalendar {
+    display: inline-block;
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    padding: 12px 25px;
+    border-radius: 40px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    backdrop-filter: blur(5px);
+}
+
+#btnVolverCalendar:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+/* Filtros rápidos */
+.calendar-filtros {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-bottom: 30px;
+    flex-wrap: wrap;
+}
+
+.filtro-btn {
+    padding: 10px 20px;
+    border: 2px solid var(--border-color);
+    border-radius: 30px;
+    background: var(--bg-card);
+    color: var(--text-secondary);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.95em;
+}
+
+.filtro-btn:hover {
+    border-color: var(--accent-color);
+    color: var(--accent-color);
+    transform: translateY(-2px);
+}
+
+.filtro-btn.active {
+    background: var(--accent-color);
+    color: white;
+    border-color: var(--accent-color);
+}
+
+/* Tarjeta de la próxima clase (AMARILLO DESTACADO) */
+.proxima-clase-card {
+    background: linear-gradient(135deg, #fff9e6 0%, #fff2cc 100%);
+    border: 4px solid #ffd966;
+    border-radius: 20px;
+    padding: 25px;
+    margin-bottom: 40px;
+    box-shadow: 0 15px 30px rgba(255, 215, 0, 0.4);
+    animation: glowPulse 2s infinite ease-in-out;
+}
+
+@keyframes glowPulse {
+    0% { box-shadow: 0 5px 20px rgba(255, 215, 0, 0.3); }
+    50% { box-shadow: 0 15px 40px rgba(255, 215, 0, 0.7); }
+    100% { box-shadow: 0 5px 20px rgba(255, 215, 0, 0.3); }
+}
+
+.proxima-clase-header {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.proxima-clase-header h2 {
+    color: #b45f06;
+    margin: 0;
+    font-size: 1.8em;
+    font-weight: 800;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+}
+
+.proxima-icon {
+    font-size: 2em;
+    animation: starTwinkle 1.5s infinite;
+}
+
+@keyframes starTwinkle {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.8; transform: scale(1.2); }
+}
+
+.proxima-clase-info {
+    text-align: center;
+}
+
+.proxima-clase-info h3 {
+    color: #7f6000;
+    font-size: 1.6em;
+    margin: 0 0 15px 0;
+    font-weight: 700;
+}
+
+.proxima-clase-info p {
+    color: #5e3a00;
+    font-size: 1.1em;
+    margin: 8px 0;
+    line-height: 1.5;
+}
+
+.proxima-clase-info strong {
+    color: #b45f06;
+}
+
+/* Grid de clases */
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 25px;
+    margin-top: 20px;
+}
+
+/* Tarjeta de clase */
+.calendar-card {
+    background: var(--bg-card);
+    border-radius: 15px;
+    padding: 20px;
+    box-shadow: var(--shadow-md);
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--border-color);
+    position: relative;
+    overflow: hidden;
+}
+
+.calendar-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background: linear-gradient(90deg, var(--accent-color), transparent);
+}
+
+.calendar-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-lg);
+}
+
+/* Bordes de estado */
+.calendar-card.pasada::before {
+    background: linear-gradient(90deg, var(--text-muted), transparent);
+}
+
+.calendar-card.futura::before {
+    background: linear-gradient(90deg, var(--accent-color), transparent);
+}
+
+.calendar-card.proxima {
+    border: 2px solid #ffd966;
+    background: rgba(255, 215, 0, 0.05);
+}
+
+.calendar-card.proxima::before {
+    background: linear-gradient(90deg, #ffd966, #ffb347);
+    height: 6px;
+}
+
+/* Tipos de clase */
+.calendar-card.publica::after {
+    content: '🔴';
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 0.8em;
+    opacity: 0.5;
+}
+
+.calendar-card.historica::after {
+    content: '📼';
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 0.8em;
+    opacity: 0.5;
+}
+
+/* Header de la tarjeta */
+.calendar-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 15px;
+    gap: 10px;
+}
+
+.calendar-card-header h3 {
+    margin: 0;
+    font-size: 1.2em;
+    color: var(--text-primary);
+    font-weight: 700;
+    flex: 1;
+    line-height: 1.4;
+}
+
+/* Badge de tipo */
+.clase-tipo-badge {
+    font-size: 0.7em;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-weight: 700;
+    white-space: nowrap;
+    letter-spacing: 0.5px;
+}
+
+.clase-tipo-badge.publica {
+    background: rgba(52, 168, 83, 0.15);
+    color: var(--success-500);
+    border: 1px solid rgba(52, 168, 83, 0.3);
+}
+
+.clase-tipo-badge.historica {
+    background: rgba(66, 133, 244, 0.15);
+    color: var(--accent-color);
+    border: 1px solid rgba(66, 133, 244, 0.3);
+}
+
+/* Contenido de la tarjeta */
+.clase-instructores {
+    color: var(--text-secondary);
+    font-size: 0.9em;
+    margin: 5px 0;
+    font-style: italic;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.clase-detalles {
+    margin: 10px 0;
+}
+
+.clase-fecha, .clase-lugar {
+    color: var(--text-secondary);
+    font-size: 0.9em;
+    margin: 3px 0;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.clase-descripcion {
+    color: var(--text-primary);
+    font-size: 0.9em;
+    margin: 10px 0;
+    line-height: 1.5;
+    padding: 10px;
+    background: var(--bg-container);
+    border-radius: 8px;
+    border-left: 3px solid var(--accent-color);
+}
+
+/* Enlaces de material */
+.clase-material {
+    display: flex;
+    gap: 8px;
+    margin: 15px 0 10px;
+    flex-wrap: wrap;
+}
+
+.material-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 12px;
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 0.85em;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.material-link.youtube {
+    background: #ff0000;
+    color: white;
+}
+
+.material-link.youtube:hover {
+    background: #cc0000;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(255, 0, 0, 0.3);
+}
+
+.material-link.powerpoint {
+    background: #d24726;
+    color: white;
+}
+
+.material-link.powerpoint:hover {
+    background: #b33e1f;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(210, 71, 38, 0.3);
+}
+
+/* Badge de estado */
+.clase-estado-badge {
+    align-self: flex-end;
+    margin-top: 10px;
+    padding: 6px 15px;
+    border-radius: 20px;
+    font-size: 0.8em;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.clase-estado-badge.pasada {
+    background: var(--bg-container);
+    color: var(--text-muted);
+    border: 1px solid var(--border-color);
+}
+
+.clase-estado-badge.futura {
+    background: rgba(66, 133, 244, 0.1);
+    color: var(--accent-color);
+    border: 1px solid rgba(66, 133, 244, 0.3);
+}
+
+.clase-estado-badge.proxima {
+    background: #ffd966;
+    color: #7f6000;
+    border: 2px solid #b45f06;
+    font-weight: 800;
+    animation: pulseBadge 1s infinite;
+}
+
+@keyframes pulseBadge {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+/* Mensajes de estado */
+.loading-classes,
+.no-classes-message,
+.error-message {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 60px;
+    background: var(--bg-card);
+    border-radius: 15px;
+    color: var(--text-muted);
+    font-size: 1.1em;
+    border: 2px dashed var(--border-color);
+}
+
+.error-message {
+    color: var(--error-500);
+    border-color: var(--error-500);
+    background: rgba(234, 67, 53, 0.05);
+}
+
+/* Animaciones */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .calendar-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .calendar-header h1 {
+        font-size: 2em;
+    }
+
+    .proxima-clase-header h2 {
+        font-size: 1.3em;
+    }
+    
+    .proxima-clase-info h3 {
+        font-size: 1.2em;
+    }
+
+    .proxima-icon {
+        font-size: 1.5em;
+    }
+
+    .calendar-filtros {
+        flex-direction: column;
+        align-items: stretch;
+        padding: 0 10px;
+    }
+
+    .filtro-btn {
+        width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    .calendar-header h1 {
+        font-size: 1.6em;
+    }
+    
+    .calendar-card-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .calendar-card-header h3 {
+        font-size: 1.1em;
+    }
+
+    .clase-material {
+        flex-direction: column;
+    }
+
+    .material-link {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+/* Scrollbar personalizada */
+.calendar-grid::-webkit-scrollbar {
+    width: 8px;
+}
+
+.calendar-grid::-webkit-scrollbar-track {
+    background: var(--bg-secondary);
+    border-radius: 4px;
+}
+
+.calendar-grid::-webkit-scrollbar-thumb {
+    background: var(--accent-color);
+    border-radius: 4px;
+}
+
+.calendar-grid::-webkit-scrollbar-thumb:hover {
+    background: var(--accent-hover);
+}

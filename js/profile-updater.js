@@ -88,8 +88,35 @@ class ProfileUpdater {
 
             // Mostrar botón de panel de administración si es admin o avanzado
             this.showAdminPanelButton(user);
+            this.showCalendarButton(userActions);
         }
     }
+
+    // 👇 NUEVO MÉTODO PARA AÑADIR EL BOTÓN DE CALENDARIO
+showCalendarButton(userActions) {
+    // Verificar si ya existe el botón para no duplicar
+    const existingCalendarBtn = document.getElementById('calendarBtn');
+    if (existingCalendarBtn) {
+        existingCalendarBtn.remove();
+    }
+
+    // Crear el botón de calendario
+    const calendarBtn = document.createElement('button');
+    calendarBtn.id = 'calendarBtn';
+    calendarBtn.className = 'calendar-btn';
+    calendarBtn.innerHTML = '📅 Calendario Educativo';
+    calendarBtn.onclick = () => {
+        window.location.href = '/calendar.html';
+    };
+
+    // Insertar al principio de las acciones (después de admin panel si existe)
+    const adminPanelBtn = document.getElementById('adminPanelBtn');
+    if (adminPanelBtn) {
+        adminPanelBtn.insertAdjacentElement('afterend', calendarBtn);
+    } else {
+        userActions.insertBefore(calendarBtn, userActions.firstChild);
+    }
+}
 
     hideUserInfo() {
         const userInfo = document.getElementById('userInfo');
@@ -479,12 +506,14 @@ class ProfileUpdater {
             this.showMessage('❌ La nueva contraseña debe tener al menos 6 caracteres', 'error');
             return false;
         }
-
+        if (newPassword && newPassword.length > 15) {
+            this.showMessage('❌ La nueva contraseña no puede tener más de 15 caracteres', 'error');
+            return false;
+        }
         if (newPassword && newPassword !== confirmPassword) {
             this.showMessage('❌ Las contraseñas no coinciden', 'error');
             return false;
         }
-
         return true;
     }
 

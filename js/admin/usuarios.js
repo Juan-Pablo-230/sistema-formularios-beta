@@ -232,7 +232,7 @@ class UsuariosManager {
             
             // En edición, la contraseña es opcional
             document.getElementById('userPassword').required = false;
-            document.getElementById('userPassword').placeholder = 'Dejar en blanco para mantener';
+            document.getElementById('userPassword').placeholder = 'Dejar en blanco para mantener (máx 15)';
             if (passwordGroup) passwordGroup.style.display = 'block';
             
             console.log('✏️ Editando usuario:', usuario.apellidoNombre);
@@ -243,7 +243,7 @@ class UsuariosManager {
             
             // En creación, la contraseña es obligatoria
             document.getElementById('userPassword').required = true;
-            document.getElementById('userPassword').placeholder = 'Mínimo 6 caracteres';
+            document.getElementById('userPassword').placeholder = 'Mínimo 6, máximo 15 caracteres';
             if (passwordGroup) passwordGroup.style.display = 'block';
         }
         
@@ -298,6 +298,10 @@ class UsuariosManager {
         
         if (password && password.length < 6) {
             this.mostrarMensajeModal('❌ La contraseña debe tener al menos 6 caracteres', 'error');
+            return;
+        }
+        if (password && password.length > 15) {
+            this.mostrarMensajeModal('❌ La contraseña no puede tener más de 15 caracteres', 'error');
             return;
         }
         

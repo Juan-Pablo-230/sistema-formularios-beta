@@ -3,12 +3,18 @@ const cors = require('cors');
 const { ObjectId } = require('mongodb');
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 require('dotenv').config();
 
 const { connectToDatabase, getDB, mongoDB } = require('./database');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// ==================== FUNCIÓN HASH ====================
+function hashPassword(password) {
+    return crypto.createHash('sha256').update(password).digest('hex');
+}
 
 // ==================== CONFIGURACIÓN INICIAL ====================
 console.log('🚀 Iniciando Sistema de Formularios MongoDB...');
@@ -71,7 +77,8 @@ app.get('/api/debug/routes', (req, res) => {
             '/api/tiempo-clase (GET)',
             '/api/tiempo-clase/estadisticas (GET)',
             '/api/tiempo-clase/usuario/:usuarioId (GET)',
-            '/api/tiempo-clase/init (GET)'
+            '/api/tiempo-clase/init (GET)',
+            '/api/usuarios/migrar (POST)'
         ],
         timestamp: new Date().toISOString()
     });
@@ -117,13 +124,32 @@ app.post('/api/auth/login', async (req, res) => {
             });
         }
 
-        // Verificar contraseña
-        if (usuario.password !== password) {
+        // Verificar contraseña: primero en texto plano (para usuarios antiguos)
+        let passwordMatches = false;
+        let needsPasswordChange = false;
+        
+        if (usuario.password === password) {
+            // Coincide en texto plano -> usuario antiguo, debe migrar
+            passwordMatches = true;
+            needsPasswordChange = true;
+        } else {
+            // Probar con hash
+            const hashedInput = hashPassword(password);
+            if (usuario.password === hashedInput) {
+                passwordMatches = true;
+                needsPasswordChange = false; // ya tiene hash
+            }
+        }
+
+        if (!passwordMatches) {
             return res.status(401).json({ 
                 success: false, 
                 message: 'Contraseña incorrecta'
             });
         }
+
+        // Determinar si necesita aceptar TYC
+        const needsTyAceptacion = !usuario.tycAceptado;
 
         // Remover password de la respuesta
         const { password: _, ...usuarioSinPassword } = usuario;
@@ -131,7 +157,11 @@ app.post('/api/auth/login', async (req, res) => {
         res.json({ 
             success: true, 
             message: 'Login exitoso', 
-            data: usuarioSinPassword 
+            data: {
+                ...usuarioSinPassword,
+                needsPasswordChange,
+                needsTyAceptacion
+            }
         });
 
     } catch (error) {
@@ -156,6 +186,12 @@ app.post('/api/auth/register', async (req, res) => {
                 message: 'Todos los campos son requeridos' 
             });
         }
+        if (password.length > 15) {
+            return res.status(400).json({
+                success: false,
+                message: 'La contraseña no puede exceder los 15 caracteres'
+            });
+        }
         
         const db = await mongoDB.getDatabaseSafe('formulario');
         
@@ -174,16 +210,20 @@ app.post('/api/auth/register', async (req, res) => {
             });
         }
         
-        // Crear nuevo usuario
-        const nuevoUsuario = {
+        // Hashear contraseña
+        const hashedPassword = hashPassword(password);
+        
+        // Crear nuevo usuario (con tycAceptado = false) DESACTIVADO TEMPORALMENTE DEBIDO A QUE LOS RECURSOS NO ESTÁN DISPONIBLES
+/*         const nuevoUsuario = {
             apellidoNombre,
             legajo: legajo.toString(),
             turno,
             email,
-            password,
+            password: hashedPassword,
             role,
+            tycAceptado: false,
             fechaRegistro: new Date()
-        };
+        }; */
         
         const result = await db.collection('usuarios').insertOne(nuevoUsuario);
         
@@ -341,7 +381,6 @@ app.get('/api/inscripciones', async (req, res) => {
                     }
                 },
                 { $unwind: '$usuario' },
-                // Ordenar por fecha más reciente
                 { $sort: { fecha: -1 } }
             ])
             .toArray();
@@ -350,12 +389,10 @@ app.get('/api/inscripciones', async (req, res) => {
         const inscripcionesFormateadas = inscripciones.map(insc => {
             const inscripcion = { ...insc };
             
-            // Formatear fecha si existe
             if (inscripcion.fecha instanceof Date) {
                 inscripcion.fecha = inscripcion.fecha.toISOString();
             }
             
-            // Eliminar password del usuario por seguridad
             if (inscripcion.usuario && inscripcion.usuario.password) {
                 delete inscripcion.usuario.password;
             }
@@ -384,7 +421,6 @@ app.get('/api/inscripciones/estadisticas', async (req, res) => {
     try {
         const db = await mongoDB.getDatabaseSafe('formulario');
         
-        // Obtener todas las inscripciones
         const inscripciones = await db.collection('inscripciones')
             .aggregate([
                 {
@@ -401,13 +437,11 @@ app.get('/api/inscripciones/estadisticas', async (req, res) => {
         
         console.log(`📊 Total inscripciones para estadísticas: ${inscripciones.length}`);
         
-        // Calcular estadísticas
         const hoy = new Date().toISOString().split('T')[0];
         
         const inscripcionesHoy = inscripciones.filter(i => {
             if (!i.fecha) return false;
             
-            // Convertir fecha a string para comparación
             let fechaStr;
             if (i.fecha instanceof Date) {
                 fechaStr = i.fecha.toISOString().split('T')[0];
@@ -420,7 +454,6 @@ app.get('/api/inscripciones/estadisticas', async (req, res) => {
             return fechaStr === hoy;
         }).length;
         
-        // Estadísticas por clase
         const porClase = {};
         inscripciones.forEach(insc => {
             if (insc.clase) {
@@ -428,7 +461,6 @@ app.get('/api/inscripciones/estadisticas', async (req, res) => {
             }
         });
         
-        // Estadísticas por turno
         const porTurno = {};
         inscripciones.forEach(insc => {
             if (insc.turno) {
@@ -436,7 +468,6 @@ app.get('/api/inscripciones/estadisticas', async (req, res) => {
             }
         });
         
-        // Preparar últimas inscripciones para mostrar
         const ultimas = inscripciones.slice(0, 10).map(insc => {
             let fechaFormateada = 'Fecha no disponible';
             if (insc.fecha instanceof Date) {
@@ -488,8 +519,6 @@ app.get('/api/inscripciones/estadisticas', async (req, res) => {
 });
 
 // ==================== RUTAS DE CLASES HISTÓRICAS ====================
-
-// Obtener todas las clases históricas
 app.get('/api/clases-historicas', async (req, res) => {
     try {
         console.log('📥 GET /api/clases-historicas');
@@ -517,7 +546,6 @@ app.get('/api/clases-historicas', async (req, res) => {
     }
 });
 
-// Obtener una clase específica por ID (histórica)
 app.get('/api/clases-historicas/:id', async (req, res) => {
     try {
         const { id } = req.params;
@@ -546,7 +574,7 @@ app.get('/api/clases-historicas/:id', async (req, res) => {
         res.json({ 
             success: true, 
             data: clase,
-            serverTime: Date.now()  // Incluimos serverTime por si acaso
+            serverTime: Date.now()
         });
         
     } catch (error) {
@@ -558,7 +586,6 @@ app.get('/api/clases-historicas/:id', async (req, res) => {
     }
 });
 
-// Crear nueva clase histórica
 app.post('/api/clases-historicas', async (req, res) => {
     try {
         const userHeader = req.headers['user-id'];
@@ -573,7 +600,6 @@ app.post('/api/clases-historicas', async (req, res) => {
         
         const db = await mongoDB.getDatabaseSafe('formulario');
         
-        // Verificar que es admin
         const usuario = await db.collection('usuarios').findOne({ 
             _id: new ObjectId(userHeader) 
         });
@@ -587,7 +613,6 @@ app.post('/api/clases-historicas', async (req, res) => {
         
         const { nombre, descripcion, fechaClase, enlaces, instructores, tags, estado } = req.body;
         
-        // Validaciones básicas
         if (!nombre || !fechaClase) {
             return res.status(400).json({ 
                 success: false, 
@@ -597,39 +622,26 @@ app.post('/api/clases-historicas', async (req, res) => {
         
         console.log('📅 Fecha recibida (ART - string):', fechaClase);
         
-        // CORRECCIÓN: Parsear la fecha y sumar 3 horas para convertir ART a UTC
         let fecha;
-        
         if (fechaClase.includes('T')) {
-            // Formato esperado: YYYY-MM-DDTHH:mm:ss
             const [fechaPart, horaPart] = fechaClase.split('T');
             const [year, month, day] = fechaPart.split('-').map(Number);
             const [hour, minute] = horaPart.split(':').map(Number);
             
-            // Verificar que los valores sean números válidos
             if (isNaN(year) || isNaN(month) || isNaN(day) || isNaN(hour) || isNaN(minute)) {
                 throw new Error('Formato de fecha inválido');
             }
             
-            // Sumar 3 horas para convertir de ART a UTC
-            // Argentina es GMT-3, por lo que ART = UTC-3
-            // Para convertir ART a UTC: UTC = ART + 3
             const horaUTC = hour + 3;
-            
-            // Crear fecha en UTC
-            // Nota: Los meses en JavaScript van de 0-11, por eso restamos 1 al mes
             fecha = new Date(Date.UTC(year, month - 1, day, horaUTC, minute, 0));
-            
             console.log(`⏰ Hora ART: ${hour}:${minute} -> Hora UTC: ${horaUTC}:${minute}`);
         } else {
-            // Si solo viene fecha, asumir 00:00 ART
             const [year, month, day] = fechaClase.split('-').map(Number);
-            fecha = new Date(Date.UTC(year, month - 1, day, 3, 0, 0)); // 00:00 ART = 03:00 UTC
+            fecha = new Date(Date.UTC(year, month - 1, day, 3, 0, 0));
         }
         
         console.log('📅 Fecha guardada (UTC):', fecha.toISOString());
         
-        // Determinar el estado
         let estadoFinal = estado || 'activa';
         const activaBool = estadoFinal === 'activa' || estadoFinal === 'publicada';
         
@@ -667,7 +679,6 @@ app.post('/api/clases-historicas', async (req, res) => {
     }
 });
 
-// Actualizar clase histórica
 app.put('/api/clases-historicas/:id', async (req, res) => {
     try {
         const { id } = req.params;
@@ -683,7 +694,6 @@ app.put('/api/clases-historicas/:id', async (req, res) => {
         
         const db = await mongoDB.getDatabaseSafe('formulario');
         
-        // Verificar que es admin
         const usuario = await db.collection('usuarios').findOne({ 
             _id: new ObjectId(userHeader) 
         });
@@ -697,7 +707,6 @@ app.put('/api/clases-historicas/:id', async (req, res) => {
         
         const { nombre, descripcion, fechaClase, enlaces, instructores, tags, estado } = req.body;
         
-        // Validaciones básicas
         if (!nombre || !fechaClase) {
             return res.status(400).json({ 
                 success: false, 
@@ -707,36 +716,26 @@ app.put('/api/clases-historicas/:id', async (req, res) => {
         
         console.log('📅 Fecha actualización recibida (ART - string):', fechaClase);
         
-        // CORRECCIÓN: Parsear la fecha y sumar 3 horas para convertir ART a UTC
         let fecha;
-        
         if (fechaClase.includes('T')) {
-            // Formato esperado: YYYY-MM-DDTHH:mm:ss
             const [fechaPart, horaPart] = fechaClase.split('T');
             const [year, month, day] = fechaPart.split('-').map(Number);
             const [hour, minute] = horaPart.split(':').map(Number);
             
-            // Verificar que los valores sean números válidos
             if (isNaN(year) || isNaN(month) || isNaN(day) || isNaN(hour) || isNaN(minute)) {
                 throw new Error('Formato de fecha inválido');
             }
             
-            // Sumar 3 horas para convertir de ART a UTC
             const horaUTC = hour + 3;
-            
-            // Crear fecha en UTC
             fecha = new Date(Date.UTC(year, month - 1, day, horaUTC, minute, 0));
-            
             console.log(`⏰ Hora ART: ${hour}:${minute} -> Hora UTC: ${horaUTC}:${minute}`);
         } else {
-            // Si solo viene fecha, asumir 00:00 ART
             const [year, month, day] = fechaClase.split('-').map(Number);
             fecha = new Date(Date.UTC(year, month - 1, day, 3, 0, 0));
         }
         
         console.log('📅 Fecha guardada (UTC):', fecha.toISOString());
         
-        // Determinar el estado
         let estadoFinal = estado || 'activa';
         const activaBool = estadoFinal === 'activa' || estadoFinal === 'publicada';
         
@@ -784,7 +783,6 @@ app.put('/api/clases-historicas/:id', async (req, res) => {
     }
 });
 
-// Eliminar clase histórica
 app.delete('/api/clases-historicas/:id', async (req, res) => {
     try {
         const { id } = req.params;
@@ -800,7 +798,6 @@ app.delete('/api/clases-historicas/:id', async (req, res) => {
         
         const db = await mongoDB.getDatabaseSafe('formulario');
         
-        // Verificar que es admin
         const usuario = await db.collection('usuarios').findOne({ 
             _id: new ObjectId(userHeader) 
         });
@@ -841,8 +838,6 @@ app.delete('/api/clases-historicas/:id', async (req, res) => {
 });
 
 // ==================== RUTAS DE MATERIAL HISTÓRICO ====================
-
-// Guardar solicitud de material histórico
 app.post('/api/material-historico/solicitudes', async (req, res) => {
     try {
         const userHeader = req.headers['user-id'];
@@ -859,7 +854,6 @@ app.post('/api/material-historico/solicitudes', async (req, res) => {
         const { claseId, claseNombre, email, youtube, powerpoint } = req.body;
         const db = await mongoDB.getDatabaseSafe('formulario');
         
-        // Verificar que el usuario existe
         const usuario = await db.collection('usuarios').findOne({ 
             _id: new ObjectId(userHeader) 
         });
@@ -871,14 +865,12 @@ app.post('/api/material-historico/solicitudes', async (req, res) => {
             });
         }
         
-        // Verificar si ya solicitó esta clase
         const solicitudExistente = await db.collection('solicitudMaterial').findOne({
             usuarioId: new ObjectId(userHeader),
             claseId: claseId
         });
         
         if (solicitudExistente) {
-            // Si ya existe, devolvemos los enlaces pero no creamos duplicado
             return res.json({ 
                 success: true, 
                 message: 'Material ya solicitado anteriormente',
@@ -887,7 +879,6 @@ app.post('/api/material-historico/solicitudes', async (req, res) => {
             });
         }
         
-        // Crear nueva solicitud
         const nuevaSolicitud = {
             usuarioId: new ObjectId(userHeader),
             claseId: claseId,
@@ -916,7 +907,6 @@ app.post('/api/material-historico/solicitudes', async (req, res) => {
     }
 });
 
-// Obtener solicitudes de material histórico
 app.get('/api/material-historico/solicitudes', async (req, res) => {
     try {
         const userHeader = req.headers['user-id'];
@@ -932,7 +922,6 @@ app.get('/api/material-historico/solicitudes', async (req, res) => {
         
         const db = await mongoDB.getDatabaseSafe('formulario');
         
-        // Verificar que el usuario existe
         const usuario = await db.collection('usuarios').findOne({ 
             _id: new ObjectId(userHeader) 
         });
@@ -944,8 +933,6 @@ app.get('/api/material-historico/solicitudes', async (req, res) => {
             });
         }
         
-        // Si es admin, puede ver todas las solicitudes
-        // Si no es admin, solo puede ver las suyas
         let matchCriteria = { usuarioId: new ObjectId(userHeader) };
         
         if (usuario.role === 'admin') {
@@ -953,7 +940,6 @@ app.get('/api/material-historico/solicitudes', async (req, res) => {
             matchCriteria = {};
         }
         
-        // Obtener solicitudes con datos del usuario
         const solicitudes = await db.collection('solicitudMaterial')
             .aggregate([
                 {
@@ -995,7 +981,7 @@ app.get('/api/admin/usuarios', async (req, res) => {
         const db = await mongoDB.getDatabaseSafe('formulario');
         
         const usuarios = await db.collection('usuarios')
-            .find({}, { projection: { password: 0 } }) // Excluir password
+            .find({}, { projection: { password: 0 } })
             .toArray();
         
         res.json({ 
@@ -1022,10 +1008,15 @@ app.post('/api/admin/usuarios', async (req, res) => {
                 message: 'Todos los campos son requeridos' 
             });
         }
+        if (password.length > 15) {
+            return res.status(400).json({
+                success: false,
+                message: 'La contraseña no puede exceder los 15 caracteres'
+            });
+        }
         
         const db = await mongoDB.getDatabaseSafe('formulario');
         
-        // Verificar si el usuario ya existe
         const usuarioExistente = await db.collection('usuarios').findOne({
             $or: [
                 { email: email },
@@ -1040,20 +1031,21 @@ app.post('/api/admin/usuarios', async (req, res) => {
             });
         }
         
-        // Crear nuevo usuario
-        const nuevoUsuario = {
+        const hashedPassword = hashPassword(password);
+        
+/*         const nuevoUsuario = { DESESTIMADO TEMPORALMENTE DEBIDO A QUE LOS RECURSOS NO ESTÁN DISPONIBLES
             apellidoNombre,
             legajo: legajo.toString(),
             turno,
             email,
-            password,
+            password: hashedPassword,
             role,
+            tycAceptado: false,
             fechaRegistro: new Date()
-        };
+        }; */
         
         const result = await db.collection('usuarios').insertOne(nuevoUsuario);
         
-        // Remover password de la respuesta
         const { password: _, ...usuarioCreado } = nuevoUsuario;
         usuarioCreado._id = result.insertedId;
         
@@ -1127,13 +1119,20 @@ app.put('/api/admin/usuarios/:id/password', async (req, res) => {
                 message: 'La nueva contraseña debe tener al menos 6 caracteres' 
             });
         }
+        if (newPassword.length > 15) {
+            return res.status(400).json({
+                success: false,
+                message: 'La nueva contraseña no puede exceder los 15 caracteres'
+            });
+        }
         
         const db = await mongoDB.getDatabaseSafe('formulario');
         
-        // Actualizar contraseña
+        const hashedPassword = hashPassword(newPassword);
+        
         const result = await db.collection('usuarios').updateOne(
             { _id: new ObjectId(id) },
-            { $set: { password: newPassword } }
+            { $set: { password: hashedPassword } }
         );
         
         if (result.matchedCount === 0) {
@@ -1174,7 +1173,6 @@ app.put('/api/admin/usuarios/:id', async (req, res) => {
         
         const db = await mongoDB.getDatabaseSafe('formulario');
         
-        // Verificar si el nuevo legajo o email ya existen en otro usuario
         const usuarioExistente = await db.collection('usuarios').findOne({
             $and: [
                 { _id: { $ne: new ObjectId(id) } },
@@ -1192,7 +1190,6 @@ app.put('/api/admin/usuarios/:id', async (req, res) => {
             });
         }
         
-        // Actualizar usuario
         const result = await db.collection('usuarios').updateOne(
             { _id: new ObjectId(id) },
             { $set: { 
@@ -1233,7 +1230,6 @@ app.delete('/api/admin/usuarios/:id', async (req, res) => {
         
         const db = await mongoDB.getDatabaseSafe('formulario');
         
-        // Verificar que el usuario existe
         const usuario = await db.collection('usuarios').findOne({ 
             _id: new ObjectId(id) 
         });
@@ -1245,7 +1241,6 @@ app.delete('/api/admin/usuarios/:id', async (req, res) => {
             });
         }
         
-        // No permitir eliminar al usuario actual
         const currentUserId = req.headers['user-id'];
         if (currentUserId === id) {
             return res.status(400).json({ 
@@ -1254,7 +1249,6 @@ app.delete('/api/admin/usuarios/:id', async (req, res) => {
             });
         }
         
-        // Eliminar el usuario
         const result = await db.collection('usuarios').deleteOne({ 
             _id: new ObjectId(id) 
         });
@@ -1283,7 +1277,7 @@ app.delete('/api/admin/usuarios/:id', async (req, res) => {
     }
 });
 
-// ==================== RUTAS DE USUARIO (para perfil) ====================
+// ==================== RUTAS DE USUARIO (para perfil y migración) ====================
 app.put('/api/usuarios/perfil', async (req, res) => {
     try {
         const userHeader = req.headers['user-id'];
@@ -1299,7 +1293,6 @@ app.put('/api/usuarios/perfil', async (req, res) => {
         
         const { apellidoNombre, legajo, turno, email, password, currentPassword } = req.body;
         
-        // Validaciones
         if (!apellidoNombre || !legajo || !turno || !email || !currentPassword) {
             return res.status(400).json({ 
                 success: false, 
@@ -1309,7 +1302,6 @@ app.put('/api/usuarios/perfil', async (req, res) => {
         
         const db = await mongoDB.getDatabaseSafe('formulario');
         
-        // Verificar usuario actual
         const usuarioActual = await db.collection('usuarios').findOne({ 
             _id: new ObjectId(userHeader) 
         });
@@ -1321,15 +1313,15 @@ app.put('/api/usuarios/perfil', async (req, res) => {
             });
         }
         
-        // Verificar contraseña actual
-        if (usuarioActual.password !== currentPassword) {
+        const currentPasswordMatches = (usuarioActual.password === currentPassword) || 
+                                       (usuarioActual.password === hashPassword(currentPassword));
+        if (!currentPasswordMatches) {
             return res.status(401).json({ 
                 success: false, 
                 message: 'Contraseña actual incorrecta' 
             });
         }
         
-        // Verificar si el nuevo legajo o email ya existen (excluyendo el usuario actual)
         if (legajo !== usuarioActual.legajo || email !== usuarioActual.email) {
             const usuarioExistente = await db.collection('usuarios').findOne({
                 $and: [
@@ -1349,7 +1341,6 @@ app.put('/api/usuarios/perfil', async (req, res) => {
             }
         }
         
-        // Preparar datos para actualizar
         const updateData = {
             apellidoNombre,
             legajo: legajo.toString(),
@@ -1357,25 +1348,27 @@ app.put('/api/usuarios/perfil', async (req, res) => {
             email
         };
         
-        // Si se proporciona nueva contraseña, añadirla
-        if (password && password.length >= 6) {
-            updateData.password = password;
+        if (password) {
+            if (password.length < 6) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'La nueva contraseña debe tener al menos 6 caracteres'
+                });
+            }
+            if (password.length > 15) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'La nueva contraseña no puede exceder los 15 caracteres'
+                });
+            }
+            updateData.password = hashPassword(password);
         }
         
-        // Actualizar usuario
-        const result = await db.collection('usuarios').updateOne(
+        await db.collection('usuarios').updateOne(
             { _id: new ObjectId(userHeader) },
             { $set: updateData }
         );
         
-        if (result.matchedCount === 0) {
-            return res.status(404).json({ 
-                success: false, 
-                message: 'Usuario no encontrado' 
-            });
-        }
-        
-        // Obtener usuario actualizado (sin password)
         const usuarioActualizado = await db.collection('usuarios').findOne(
             { _id: new ObjectId(userHeader) },
             { projection: { password: 0 } }
@@ -1391,6 +1384,107 @@ app.put('/api/usuarios/perfil', async (req, res) => {
         
     } catch (error) {
         console.error('❌ Error actualizando perfil:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Error interno del servidor',
+            error: error.message 
+        });
+    }
+});
+
+// NUEVA RUTA: Migración de contraseña y aceptación de TYC
+app.post('/api/usuarios/migrar', async (req, res) => {
+    try {
+        const userHeader = req.headers['user-id'];
+        
+        if (!userHeader) {
+            return res.status(401).json({ 
+                success: false, 
+                message: 'No autenticado' 
+            });
+        }
+        
+        /* const { currentPassword, newPassword, aceptarTyC } = req.body; */ //DESESTIMADO TEMPORALMENTE DEBIDO A QUE LOS RECURSOS NO ESTÁN DISPONIBLES
+        const { currentPassword, newPassword } = req.body;
+        
+        if (!currentPassword) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'La contraseña actual es requerida' 
+            });
+        }
+        
+/*         if (aceptarTyC !== true) { DESESTIMADO TEMPORALMENTE DEBIDO A QUE LOS RECURSOS NO ESTÁN DISPONIBLES
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Debe aceptar los Términos y Condiciones' 
+            });
+        } */
+        
+        const db = await mongoDB.getDatabaseSafe('formulario');
+        
+        const usuario = await db.collection('usuarios').findOne({ 
+            _id: new ObjectId(userHeader) 
+        });
+        
+        if (!usuario) {
+            return res.status(404).json({ 
+                success: false, 
+                message: 'Usuario no encontrado' 
+            });
+        }
+        
+        const currentPasswordMatches = (usuario.password === currentPassword) || 
+                                       (usuario.password === hashPassword(currentPassword));
+        if (!currentPasswordMatches) {
+            return res.status(401).json({ 
+                success: false, 
+                message: 'Contraseña actual incorrecta' 
+            });
+        }
+        
+/*         const updateData = { DESESTIMADO TEMPORALMENTE DEBIDO A QUE LOS RECURSOS NO ESTÁN DISPONIBLES
+            tycAceptado: true,
+            fechaAceptacionTYC: new Date()
+        }; */
+        
+        if (newPassword) {
+            if (newPassword.length < 6) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'La nueva contraseña debe tener al menos 6 caracteres'
+                });
+            }
+            if (newPassword.length > 15) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'La nueva contraseña no puede exceder los 15 caracteres'
+                });
+            }
+            updateData.password = hashPassword(newPassword);
+        }
+        
+        await db.collection('usuarios').updateOne(
+            { _id: new ObjectId(userHeader) },
+            { $set: updateData }
+        );
+        
+        const usuarioActualizado = await db.collection('usuarios').findOne(
+            { _id: new ObjectId(userHeader) },
+            { projection: { password: 0 } }
+        );
+        
+        /* console.log('✅ Usuario migrado y TYC aceptado:', usuarioActualizado.apellidoNombre); */ //DESESTIMADO TEMPORALMENTE DEBIDO A QUE LOS RECURSOS NO ESTÁN DISPONIBLES
+        console.log('✅ Usuario migrado', usuarioActualizado.apellidoNombre);
+        
+        res.json({ 
+            success: true, 
+            message: 'Migración completada exitosamente',
+            data: usuarioActualizado 
+        });
+        
+    } catch (error) {
+        console.error('❌ Error en migración:', error);
         res.status(500).json({ 
             success: false, 
             message: 'Error interno del servidor',
@@ -1423,7 +1517,6 @@ app.delete('/api/usuarios/cuenta', async (req, res) => {
         
         const db = await mongoDB.getDatabaseSafe('formulario');
         
-        // Verificar usuario
         const usuario = await db.collection('usuarios').findOne({ 
             _id: new ObjectId(userHeader) 
         });
@@ -1435,15 +1528,15 @@ app.delete('/api/usuarios/cuenta', async (req, res) => {
             });
         }
         
-        // Verificar contraseña
-        if (usuario.password !== currentPassword) {
+        const passwordMatches = (usuario.password === currentPassword) || 
+                                (usuario.password === hashPassword(currentPassword));
+        if (!passwordMatches) {
             return res.status(401).json({ 
                 success: false, 
                 message: 'Contraseña incorrecta' 
             });
         }
         
-        // Eliminar usuario
         const result = await db.collection('usuarios').deleteOne({ 
             _id: new ObjectId(userHeader) 
         });
@@ -1472,9 +1565,7 @@ app.delete('/api/usuarios/cuenta', async (req, res) => {
     }
 });
 
-// ==================== RUTAS PARA CLASES PÚBLICAS (PÁGINA PRINCIPAL) ====================
-
-// Obtener todas las clases públicas (para el panel admin)
+// ==================== RUTAS PARA CLASES PÚBLICAS ====================
 app.get('/api/clases-publicas', async (req, res) => {
     try {
         const db = await mongoDB.getDatabaseSafe('formulario');
@@ -1490,7 +1581,6 @@ app.get('/api/clases-publicas', async (req, res) => {
     }
 });
 
-// Obtener SOLO las clases PUBLICADAS (para la página principal)
 app.get('/api/clases-publicas/publicadas', async (req, res) => {
     try {
         const db = await mongoDB.getDatabaseSafe('formulario');
@@ -1502,7 +1592,7 @@ app.get('/api/clases-publicas/publicadas', async (req, res) => {
         res.json({ 
             success: true, 
             data: clases,
-            serverTime: Date.now()  // <-- NUEVO: hora del servidor
+            serverTime: Date.now()
         });
     } catch (error) {
         console.error('❌ Error obteniendo clases publicadas:', error);
@@ -1510,48 +1600,6 @@ app.get('/api/clases-publicas/publicadas', async (req, res) => {
     }
 });
 
-// Verificar inscripción por usuarioId y claseId
-app.get('/api/inscripciones/verificar/:usuarioId/:claseId', async (req, res) => {
-    try {
-        const { usuarioId, claseId } = req.params;
-        
-        console.log('🔍 Verificando inscripción por IDs:', { usuarioId, claseId });
-        
-        // Validar IDs
-        if (!ObjectId.isValid(usuarioId)) {
-            return res.json({ success: true, data: { exists: false } });
-        }
-        
-        const db = await mongoDB.getDatabaseSafe('formulario');
-        
-        let query = { usuarioId: new ObjectId(usuarioId) };
-        
-        // Si claseId es un ObjectId válido, buscar por ObjectId
-        if (ObjectId.isValid(claseId)) {
-            query.claseId = new ObjectId(claseId);
-        } else {
-            // Si no, buscar por el string directamente
-            query.clase = decodeURIComponent(claseId);
-        }
-        
-        const inscripcion = await db.collection('inscripciones').findOne(query);
-        
-        res.json({ 
-            success: true, 
-            data: { exists: !!inscripcion } 
-        });
-        
-    } catch (error) {
-        console.error('❌ Error verificando inscripción:', error);
-        res.status(500).json({ 
-            success: false, 
-            message: 'Error interno del servidor',
-            error: error.message 
-        });
-    }
-});
-
-// Obtener una clase pública por ID (NECESARIO PARA formularios.js)
 app.get('/api/clases-publicas/:id', async (req, res) => {
     try {
         const { id } = req.params;
@@ -1580,7 +1628,7 @@ app.get('/api/clases-publicas/:id', async (req, res) => {
         res.json({ 
             success: true, 
             data: clase,
-            serverTime: Date.now()  // <-- NUEVO: hora del servidor
+            serverTime: Date.now()
         });
         
     } catch (error) {
@@ -1593,43 +1641,6 @@ app.get('/api/clases-publicas/:id', async (req, res) => {
     }
 });
 
-// Obtener todas las inscripciones de un usuario específico
-app.get('/api/inscripciones/usuario/:usuarioId', async (req, res) => {
-    try {
-        const { usuarioId } = req.params;
-        
-        console.log('📥 GET /api/inscripciones/usuario/', usuarioId);
-        
-        if (!ObjectId.isValid(usuarioId)) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'ID de usuario inválido' 
-            });
-        }
-        
-        const db = await mongoDB.getDatabaseSafe('formulario');
-        
-        const inscripciones = await db.collection('inscripciones')
-            .find({ usuarioId: new ObjectId(usuarioId) })
-            .sort({ fecha: -1 })
-            .toArray();
-        
-        res.json({ 
-            success: true, 
-            data: inscripciones 
-        });
-        
-    } catch (error) {
-        console.error('❌ Error obteniendo inscripciones del usuario:', error);
-        res.status(500).json({ 
-            success: false, 
-            message: 'Error interno del servidor',
-            error: error.message 
-        });
-    }
-});
-
-// Crear nueva clase pública
 app.post('/api/clases-publicas', async (req, res) => {
     try {
         const userHeader = req.headers['user-id'];
@@ -1640,7 +1651,6 @@ app.post('/api/clases-publicas', async (req, res) => {
         
         const db = await mongoDB.getDatabaseSafe('formulario');
         
-        // Verificar permisos (admin o advanced)
         const usuario = await db.collection('usuarios').findOne({ 
             _id: new ObjectId(userHeader) 
         });
@@ -1661,13 +1671,12 @@ app.post('/api/clases-publicas', async (req, res) => {
             });
         }
         
-        // Procesar fecha (convertir ART a UTC)
         let fecha;
         if (fechaClase.includes('T')) {
             const [fechaPart, horaPart] = fechaClase.split('T');
             const [year, month, day] = fechaPart.split('-').map(Number);
             const [hour, minute] = horaPart.split(':').map(Number);
-            const horaUTC = hour + 3; // Convertir ART a UTC
+            const horaUTC = hour + 3;
             fecha = new Date(Date.UTC(year, month - 1, day, horaUTC, minute, 0));
         } else {
             const [year, month, day] = fechaClase.split('-').map(Number);
@@ -1700,7 +1709,6 @@ app.post('/api/clases-publicas', async (req, res) => {
     }
 });
 
-// Actualizar clase pública
 app.put('/api/clases-publicas/:id', async (req, res) => {
     try {
         const { id } = req.params;
@@ -1712,7 +1720,6 @@ app.put('/api/clases-publicas/:id', async (req, res) => {
         
         const db = await mongoDB.getDatabaseSafe('formulario');
         
-        // Verificar permisos
         const usuario = await db.collection('usuarios').findOne({ 
             _id: new ObjectId(userHeader) 
         });
@@ -1733,7 +1740,6 @@ app.put('/api/clases-publicas/:id', async (req, res) => {
             });
         }
         
-        // Procesar fecha
         let fecha;
         if (fechaClase.includes('T')) {
             const [fechaPart, horaPart] = fechaClase.split('T');
@@ -1776,7 +1782,6 @@ app.put('/api/clases-publicas/:id', async (req, res) => {
     }
 });
 
-// Cambiar visibilidad de una clase pública
 app.put('/api/clases-publicas/:id/visibilidad', async (req, res) => {
     try {
         const { id } = req.params;
@@ -1789,7 +1794,6 @@ app.put('/api/clases-publicas/:id/visibilidad', async (req, res) => {
         
         const db = await mongoDB.getDatabaseSafe('formulario');
         
-        // Verificar permisos
         const usuario = await db.collection('usuarios').findOne({ 
             _id: new ObjectId(userHeader) 
         });
@@ -1821,7 +1825,6 @@ app.put('/api/clases-publicas/:id/visibilidad', async (req, res) => {
     }
 });
 
-// Eliminar clase pública
 app.delete('/api/clases-publicas/:id', async (req, res) => {
     try {
         const { id } = req.params;
@@ -1833,7 +1836,6 @@ app.delete('/api/clases-publicas/:id', async (req, res) => {
         
         const db = await mongoDB.getDatabaseSafe('formulario');
         
-        // Verificar permisos
         const usuario = await db.collection('usuarios').findOne({ 
             _id: new ObjectId(userHeader) 
         });
@@ -1861,9 +1863,7 @@ app.delete('/api/clases-publicas/:id', async (req, res) => {
     }
 });
 
-// ==================== RUTAS PARA TIEMPO EN CLASE (VERSIÓN ACUMULATIVA) ====================
-
-// Guardar o actualizar tiempo de clase (versión acumulativa)
+// ==================== RUTAS PARA TIEMPO EN CLASE ====================
 app.post('/api/tiempo-clase/actualizar', async (req, res) => {
     try {
         const userHeader = req.headers['user-id'];
@@ -1888,7 +1888,6 @@ app.post('/api/tiempo-clase/actualizar', async (req, res) => {
         
         const db = await mongoDB.getDatabaseSafe('formulario');
         
-        // Verificar que el usuario existe
         const usuario = await db.collection('usuarios').findOne({ 
             _id: new ObjectId(userHeader) 
         });
@@ -1900,7 +1899,6 @@ app.post('/api/tiempo-clase/actualizar', async (req, res) => {
             });
         }
         
-        // Buscar si ya existe un registro para este usuario y clase
         const filtro = {
             usuarioId: new ObjectId(userHeader),
             claseId: claseId
@@ -1911,7 +1909,6 @@ app.post('/api/tiempo-clase/actualizar', async (req, res) => {
         const ahora = new Date();
         
         if (registroExistente) {
-            // ACTUALIZAR: sumar los nuevos tiempos
             const updateData = {
                 $set: {
                     usuarioNombre: usuario.apellidoNombre,
@@ -1926,7 +1923,6 @@ app.post('/api/tiempo-clase/actualizar', async (req, res) => {
                 }
             };
             
-            // Si es final, marcar como completado
             if (esFinal) {
                 updateData.$set.finalizado = true;
                 updateData.$set.fechaFinalizacion = ahora;
@@ -1938,7 +1934,6 @@ app.post('/api/tiempo-clase/actualizar', async (req, res) => {
             console.log(`   + Activo: ${tiempoActivo}s, + Inactivo: ${tiempoInactivo}s`);
             
         } else {
-            // CREAR NUEVO REGISTRO
             const nuevoRegistro = {
                 usuarioId: new ObjectId(userHeader),
                 usuarioNombre: usuario.apellidoNombre,
@@ -1962,7 +1957,6 @@ app.post('/api/tiempo-clase/actualizar', async (req, res) => {
             console.log(`✅ Nuevo registro CREADO para ${usuario.apellidoNombre} en ${claseNombre}`);
         }
         
-        // Obtener el registro actualizado para devolverlo
         const registroActualizado = await db.collection('tiempo-en-clases').findOne(filtro);
         
         res.json({ 
@@ -1981,7 +1975,6 @@ app.post('/api/tiempo-clase/actualizar', async (req, res) => {
     }
 });
 
-// Obtener todos los tiempos (con filtros)
 app.get('/api/tiempo-clase', async (req, res) => {
     try {
         const userHeader = req.headers['user-id'];
@@ -1996,7 +1989,6 @@ app.get('/api/tiempo-clase', async (req, res) => {
         
         const db = await mongoDB.getDatabaseSafe('formulario');
         
-        // Verificar permisos
         const usuarioActual = await db.collection('usuarios').findOne({ 
             _id: new ObjectId(userHeader) 
         });
@@ -2008,25 +2000,20 @@ app.get('/api/tiempo-clase', async (req, res) => {
             });
         }
         
-        // Construir filtros
         let filtro = {};
         
-        // Si no es admin, solo ver sus propios registros
         if (usuarioActual.role !== 'admin' && usuarioActual.role !== 'advanced') {
             filtro.usuarioId = new ObjectId(userHeader);
         }
         
-        // Filtrar por clase
         if (clase && clase !== 'todas') {
             filtro.claseNombre = clase;
         }
         
-        // Filtrar por usuario específico
         if (usuario && (usuarioActual.role === 'admin' || usuarioActual.role === 'advanced')) {
             filtro.usuarioId = new ObjectId(usuario);
         }
         
-        // Obtener registros
         const registros = await db.collection('tiempo-en-clases')
             .find(filtro)
             .sort({ ultimaActualizacion: -1 })
@@ -2046,7 +2033,6 @@ app.get('/api/tiempo-clase', async (req, res) => {
     }
 });
 
-// Obtener estadísticas
 app.get('/api/tiempo-clase/estadisticas', async (req, res) => {
     try {
         const userHeader = req.headers['user-id'];
@@ -2060,7 +2046,6 @@ app.get('/api/tiempo-clase/estadisticas', async (req, res) => {
         
         const db = await mongoDB.getDatabaseSafe('formulario');
         
-        // Verificar permisos
         const usuarioActual = await db.collection('usuarios').findOne({ 
             _id: new ObjectId(userHeader) 
         });
@@ -2117,7 +2102,6 @@ app.get('/api/tiempo-clase/estadisticas', async (req, res) => {
     }
 });
 
-// Obtener detalle de un usuario específico
 app.get('/api/tiempo-clase/usuario/:usuarioId', async (req, res) => {
     try {
         const { usuarioId } = req.params;
@@ -2132,7 +2116,6 @@ app.get('/api/tiempo-clase/usuario/:usuarioId', async (req, res) => {
         
         const db = await mongoDB.getDatabaseSafe('formulario');
         
-        // Verificar permisos
         const usuarioActual = await db.collection('usuarios').findOne({ 
             _id: new ObjectId(userHeader) 
         });
@@ -2144,7 +2127,6 @@ app.get('/api/tiempo-clase/usuario/:usuarioId', async (req, res) => {
             });
         }
         
-        // Si no es admin ni avanzado, solo puede ver sus propios datos
         if (usuarioActual.role !== 'admin' && usuarioActual.role !== 'advanced' && 
             userHeader !== usuarioId) {
             return res.status(403).json({ 
@@ -2153,13 +2135,11 @@ app.get('/api/tiempo-clase/usuario/:usuarioId', async (req, res) => {
             });
         }
         
-        // Obtener registros del usuario
         const registros = await db.collection('tiempo-en-clases')
             .find({ usuarioId: new ObjectId(usuarioId) })
             .sort({ ultimaActualizacion: -1 })
             .toArray();
         
-        // Obtener información del usuario
         const usuario = await db.collection('usuarios').findOne(
             { _id: new ObjectId(usuarioId) },
             { projection: { password: 0 } }
@@ -2183,19 +2163,16 @@ app.get('/api/tiempo-clase/usuario/:usuarioId', async (req, res) => {
     }
 });
 
-// Inicializar colección de tiempos (opcional)
 app.get('/api/tiempo-clase/init', async (req, res) => {
     try {
         const db = await mongoDB.getDatabaseSafe('formulario');
         
-        // Verificar si la colección existe
         const collectionExists = await db.listCollections({ name: 'tiempo-en-clases' }).hasNext();
         
         if (!collectionExists) {
             console.log('📝 Creando colección "tiempo-en-clases"...');
             await db.createCollection('tiempo-en-clases');
             
-            // Crear índices
             await db.collection('tiempo-en-clases').createIndex({ usuarioId: 1, claseId: 1 }, { unique: true });
             await db.collection('tiempo-en-clases').createIndex({ usuarioId: 1 });
             await db.collection('tiempo-en-clases').createIndex({ claseId: 1 });
@@ -2229,7 +2206,6 @@ app.get('/api/init-db', async (req, res) => {
         
         const db = await mongoDB.getDatabaseSafe('formulario');
         
-        // Verificar/Crear colecciones
         const collections = ['usuarios', 'inscripciones', 'material', 'clases', 'solicitudMaterial', 'tiempo-en-clases'];
         
         for (const collectionName of collections) {
@@ -2239,10 +2215,10 @@ app.get('/api/init-db', async (req, res) => {
                 console.log(`📝 Creando colección "${collectionName}"...`);
                 await db.createCollection(collectionName);
                 
-                // Crear índices según la colección
                 if (collectionName === 'usuarios') {
                     await db.collection(collectionName).createIndex({ email: 1 }, { unique: true });
                     await db.collection(collectionName).createIndex({ legajo: 1 }, { unique: true });
+                    /* await db.collection(collectionName).createIndex({ tycAceptado: 1 }); */ //DESESTIMADO TEMPORALMENTE DEBIDO A QUE LOS RECURSOS NO ESTÁN DISPONIBLES
                     console.log(`✅ Índices creados para "${collectionName}"`);
                 } else if (collectionName === 'inscripciones') {
                     await db.collection(collectionName).createIndex({ usuarioId: 1, clase: 1 }, { unique: true });
@@ -2274,7 +2250,6 @@ app.get('/api/init-db', async (req, res) => {
             }
         }
         
-        // Verificar/crear colección de clases públicas
         const clasesPublicasExists = await db.listCollections({ name: 'clases-publicas' }).hasNext();
         if (!clasesPublicasExists) {
             console.log('📝 Creando colección "clases-publicas"...');
@@ -2288,6 +2263,14 @@ app.get('/api/init-db', async (req, res) => {
         } else {
             console.log('✅ Colección "clases-publicas" ya existe');
         }
+        
+        // Migración: agregar campo tycAceptado a usuarios existentes DESESTIMADO TEMPORALMENTE DEBIDO A QUE LOS RECURSOS NO ESTÁN DISPONIBLES
+/*         const usuarios = db.collection('usuarios');
+        await usuarios.updateMany(
+            { tycAceptado: { $exists: false } },
+            { $set: { tycAceptado: false } }
+        );
+        console.log('✅ Campo tycAceptado inicializado en usuarios existentes'); */
         
         res.json({ 
             success: true, 
@@ -2325,17 +2308,25 @@ app.use('*', (req, res) => {
 // ==================== INICIAR SERVIDOR ====================
 async function startServer() {
     try {
-        // Intentar conectar a MongoDB primero
         console.log('\n🔄 Intentando conectar a MongoDB...');
         try {
             await mongoDB.connect();
             console.log('✅ MongoDB conectado exitosamente');
+            
+            // Migración automática al iniciar: agregar campo tycAceptado si no existe DESESTIMADO TEMPORALMENTE DEBIDO A QUE LOS RECURSOS NO ESTÁN DISPONIBLES
+/*             const db = await mongoDB.getDatabaseSafe('formulario');
+            const usuarios = db.collection('usuarios');
+            await usuarios.updateMany(
+                { tycAceptado: { $exists: false } },
+                { $set: { tycAceptado: false } }
+            );
+            console.log('✅ Migración automática: campo tycAceptado inicializado'); */
+            
         } catch (dbError) {
             console.warn('⚠️ MongoDB no disponible:', dbError.message);
             console.log('⚠️ El servidor iniciará sin base de datos');
         }
         
-        // Iniciar servidor
         const server = app.listen(PORT, '0.0.0.0', () => {
             console.log('\n==========================================');
             console.log('✅ SERVIDOR INICIADO CORRECTAMENTE');
