@@ -66,33 +66,40 @@ class ProfileUpdater {
     }
 
     showUserInfo() {
-        const user = authSystem.getCurrentUser();
-        const userInfo = document.getElementById('userInfo');
-        const userName = document.getElementById('userName');
+    const user = authSystem.getCurrentUser();
+    const userInfo = document.getElementById('userInfo');
+    const userName = document.getElementById('userName');
 
-        if (user && userInfo && userName) {
-            let roleBadge = '';
-            if (user.role === 'admin') {
-                roleBadge = ' 👑';
-            } else if (user.role === 'advanced') {
-                roleBadge = ' ⭐';
-            }
-            
-            userName.textContent = `👤 ${user.apellidoNombre} - Legajo: ${user.legajo}${roleBadge}`;
-            userInfo.style.display = 'block';
+    if (user && userInfo && userName) {
+        let roleBadge = '';
+        if (user.role === 'admin') {
+            roleBadge = ' 👑';
+        } else if (user.role === 'advanced') {
+            roleBadge = ' ⭐';
+        }
+        
+        userName.textContent = `👤 ${user.apellidoNombre} - Legajo: ${user.legajo}${roleBadge}`;
+        userInfo.style.display = 'block';
 
-            // Mostrar botón de material
-            if (this.materialButtonContainer) {
-                this.materialButtonContainer.style.display = 'block';
-            }
+        // Mostrar botón de material
+        if (this.materialButtonContainer) {
+            this.materialButtonContainer.style.display = 'block';
+        }
 
-            // Mostrar botón de panel de administración si es admin o avanzado
-            this.showAdminPanelButton(user);
+        // Mostrar botón de panel de administración si es admin o avanzado
+        this.showAdminPanelButton(user);
+
+        // 👇 CORREGIDO: Obtener userActions dentro de la función
+        const userActions = document.querySelector('.user-actions');
+        if (userActions) {
             this.showCalendarButton(userActions);
+        } else {
+            console.warn('⚠️ No se encontró .user-actions para agregar el botón de calendario');
         }
     }
+}
 
-    // 👇 NUEVO MÉTODO PARA AÑADIR EL BOTÓN DE CALENDARIO
+// 👇 NUEVO MÉTODO PARA AÑADIR EL BOTÓN DE CALENDARIO (sin cambios)
 showCalendarButton(userActions) {
     // Verificar si ya existe el botón para no duplicar
     const existingCalendarBtn = document.getElementById('calendarBtn');
