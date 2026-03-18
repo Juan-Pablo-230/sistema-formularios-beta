@@ -508,100 +508,100 @@
 
         // Carga de clases en el grid
         async function cargarClasesPublicas(forzar = false) {
-            const gridContainer = document.getElementById('dynamic-classes-grid');
-            if (!gridContainer) return;
+    const gridContainer = document.getElementById('dynamic-classes-grid');
+    if (!gridContainer) return;
 
-            if (clasesCargadas && !forzar) {
-                console.log('ℹ️ Clases ya cargadas previamente, omitiendo...');
-                return;
-            }
+    if (clasesCargadas && !forzar) {
+        console.log('ℹ️ Clases ya cargadas previamente, omitiendo...');
+        return;
+    }
 
-            if (timeoutCarga) clearTimeout(timeoutCarga);
+    if (timeoutCarga) clearTimeout(timeoutCarga);
 
-            console.log('🔄 Iniciando carga de clases...');
-            gridContainer.innerHTML = '<div class="loading-classes">Cargando clases disponibles...</div>';
+    console.log('🔄 Iniciando carga de clases...');
+    gridContainer.innerHTML = '<div class="loading-classes">Cargando clases disponibles...</div>';
 
-            try {
-                const response = await fetch('/api/clases-publicas/publicadas');
-                if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
-                const result = await response.json();
-                if (!result.success || !result.data) throw new Error(result.message || 'Error al cargar las clases');
+    try {
+        const response = await fetch('/api/clases-publicas/publicadas');
+        if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
+        const result = await response.json();
+        if (!result.success || !result.data) throw new Error(result.message || 'Error al cargar las clases');
 
-                let clases = result.data;
-                const ahora = result.serverTime; // Hora exacta del servidor
+        let clases = result.data;
+        const ahora = result.serverTime;
 
-                console.log(`📊 Clases encontradas (sin filtrar): ${clases.length}`);
-                console.log(`🕒 Hora del servidor: ${new Date(ahora).toLocaleString()}`);
+        console.log(`📊 Clases encontradas (sin filtrar): ${clases.length}`);
+        console.log(`🕒 Hora del servidor: ${new Date(ahora).toLocaleString()}`);
 
-                // Filtrar clases visibles usando 'ahora' (timestamp del servidor)
-                const clasesVisibles = clases.filter(clase => {
-                    const { cierre } = obtenerTimestampsClase(clase);
-                    if (!cierre) return true;
-                    return ahora < cierre; // Comparar con timestamp del servidor
-                });
+        // Filtrar clases visibles
+        const clasesVisibles = clases.filter(clase => {
+            const { cierre } = obtenerTimestampsClase(clase);
+            if (!cierre) return true;
+            return ahora < cierre;
+        });
 
-                console.log(`📊 Clases visibles después de filtrar: ${clasesVisibles.length}`);
+        console.log(`📊 Clases visibles después de filtrar: ${clasesVisibles.length}`);
 
-                if (clasesVisibles.length === 0) {
-                    gridContainer.innerHTML = '<div class="no-classes-message">No hay clases disponibles en este momento.</div>';
-                    clasesCargadas = true;
-                    return;
-                }
-
-                // Ordenar por fecha de apertura
-                clasesVisibles.sort((a, b) => {
-                    const { apertura: aApertura } = obtenerTimestampsClase(a);
-                    const { apertura: bApertura } = obtenerTimestampsClase(b);
-                    return (aApertura || 0) - (bApertura || 0);
-                });
-
-                let htmlString = '';
-                clasesVisibles.forEach(clase => {
-                    let fechaFormateada = 'Fecha no disponible';
-                    if (clase.fechaClase) {
-                        const fecha = new Date(clase.fechaClase);
-                        fechaFormateada = fecha.toLocaleDateString('es-AR', {
-                            day: '2-digit',
-                            month: '2-digit',
-                            year: 'numeric'
-                        });
-                    }
-
-                    let instructoresTexto = 'Instructor no especificado';
-                    if (clase.instructores && clase.instructores.length > 0) {
-                        instructoresTexto = clase.instructores.join('<br>');
-                    }
-
-                    htmlString += `
-        <div class="class-card" onclick="abrirModalClase('${clase._id}')">
-            <h3>${clase.nombre}</h3>
-            <p>${instructoresTexto}</p>
-            ${clase.lugar ? `<p><small class="class-lugar"> ${clase.lugar}</small></p>` : ''}
-            <div class="class-datetime">
-                <span class="class-date">📅 ${fechaFormateada}</span>
-                <span class="class-time">⏰ ${horaInicio} hs</span>
-            </div>
-        </div>
-    `;
-
-                    htmlString += `
-                        <div class="class-card" onclick="abrirModalClase('${clase._id}')">
-                            <h3>${clase.nombre}</h3>
-                            <p>${instructoresTexto}</p>
-                            ${clase.lugar ? `<p><small class="class-lugar">📍 ${clase.lugar}</small></p>` : ''}
-                            <span class="class-date">Clase día ${fechaFormateada}</span>
-                        </div>
-                    `;
-                });
-
-                gridContainer.innerHTML = htmlString;
-                clasesCargadas = true;
-
-            } catch (error) {
-                console.error('❌ Error cargando clases:', error);
-                gridContainer.innerHTML = '<div class="error-message">Error al cargar las clases. Por favor, recargue la página.</div>';
-            }
+        if (clasesVisibles.length === 0) {
+            gridContainer.innerHTML = '<div class="no-classes-message">No hay clases disponibles en este momento.</div>';
+            clasesCargadas = true;
+            return;
         }
+
+        // Ordenar por fecha de apertura
+        clasesVisibles.sort((a, b) => {
+            const { apertura: aApertura } = obtenerTimestampsClase(a);
+            const { apertura: bApertura } = obtenerTimestampsClase(b);
+            return (aApertura || 0) - (bApertura || 0);
+        });
+
+        let htmlString = '';
+        clasesVisibles.forEach(clase => {
+            let fechaFormateada = 'Fecha no disponible';
+            let horaInicio = 'Hora no disponible'; // 👈 DECLARADA FUERA DEL IF
+            
+            if (clase.fechaClase) {
+                const fecha = new Date(clase.fechaClase);
+                
+                fechaFormateada = fecha.toLocaleDateString('es-AR', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric'
+                });
+                
+                horaInicio = fecha.toLocaleTimeString('es-AR', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: false
+                });
+            }
+
+            let instructoresTexto = 'Instructor no especificado';
+            if (clase.instructores && clase.instructores.length > 0) {
+                instructoresTexto = clase.instructores.join('<br>');
+            }
+
+            htmlString += `
+                <div class="class-card" onclick="abrirModalClase('${clase._id}')">
+                    <h3>${clase.nombre}</h3>
+                    <p>${instructoresTexto}</p>
+                    ${clase.lugar ? `<p><small class="class-lugar">📍 ${clase.lugar}</small></p>` : ''}
+                    <div class="class-datetime">
+                        <span class="class-date">📅 ${fechaFormateada}</span>
+                        <span class="class-time">⏰ ${horaInicio} hs</span>
+                    </div>
+                </div>
+            `;
+        });
+
+        gridContainer.innerHTML = htmlString;
+        clasesCargadas = true;
+
+    } catch (error) {
+        console.error('❌ Error cargando clases:', error);
+        gridContainer.innerHTML = '<div class="error-message">Error al cargar las clases. Por favor, recargue la página.</div>';
+    }
+}
 
         function verificarClasesExpiradas() {
             cargarClasesPublicas(true);
