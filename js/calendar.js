@@ -163,12 +163,6 @@ class CalendarManager {
                     
                     ${clase.descripcion ? `<p class="clase-descripcion">${clase.descripcion}</p>` : ''}
                     
-                    ${clase.enlace ? `
-                        <div class="clase-enlace">
-                            <a href="${clase.enlace}" class="btn-unirse-small" target="_blank">🔗 Acceder a la clase</a>
-                        </div>
-                    ` : ''}
-                    
                     <div class="clase-fecha-relativa">
                         ${this.obtenerTiempoRestante(new Date(clase.fechaClase).getTime())}
                     </div>
