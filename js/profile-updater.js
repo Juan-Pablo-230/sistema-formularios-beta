@@ -66,64 +66,58 @@ class ProfileUpdater {
     }
 
     showUserInfo() {
-    const user = authSystem.getCurrentUser();
-    const userInfo = document.getElementById('userInfo');
-    const userName = document.getElementById('userName');
+        const user = authSystem.getCurrentUser();
+        const userInfo = document.getElementById('userInfo');
+        const userName = document.getElementById('userName');
 
-    if (user && userInfo && userName) {
-        let roleBadge = '';
-        if (user.role === 'admin') {
-            roleBadge = ' 👑';
-        } else if (user.role === 'advanced') {
-            roleBadge = ' ⭐';
+        if (user && userInfo && userName) {
+            let roleBadge = '';
+            if (user.role === 'admin') {
+                roleBadge = ' 👑';
+            } else if (user.role === 'advanced') {
+                roleBadge = ' ⭐';
+            }
+            
+            // Agregar área a la información mostrada
+            userName.textContent = `👤 ${user.apellidoNombre} - Legajo: ${user.legajo} - Área: ${user.area || 'Sin especificar'}${roleBadge}`;
+            userInfo.style.display = 'block';
+
+            // Mostrar botón de material
+            if (this.materialButtonContainer) {
+                this.materialButtonContainer.style.display = 'block';
+            }
+
+            // Mostrar botón de panel de administración si es admin o avanzado
+            this.showAdminPanelButton(user);
+
+            const userActions = document.querySelector('.user-actions');
+            if (userActions) {
+                this.showCalendarButton(userActions);
+            }
         }
-        
-        userName.textContent = `👤 ${user.apellidoNombre} - Legajo: ${user.legajo}${roleBadge}`;
-        userInfo.style.display = 'block';
+    }
 
-        // Mostrar botón de material
-        if (this.materialButtonContainer) {
-            this.materialButtonContainer.style.display = 'block';
+    showCalendarButton(userActions) {
+        const existingCalendarBtn = document.getElementById('calendarBtn');
+        if (existingCalendarBtn) {
+            existingCalendarBtn.remove();
         }
 
-        // Mostrar botón de panel de administración si es admin o avanzado
-        this.showAdminPanelButton(user);
+        const calendarBtn = document.createElement('button');
+        calendarBtn.id = 'calendarBtn';
+        calendarBtn.className = 'calendar-btn';
+        calendarBtn.innerHTML = '📅 Calendario Educativo';
+        calendarBtn.onclick = () => {
+            window.location.href = '/calendar.html';
+        };
 
-        // 👇 CORREGIDO: Obtener userActions dentro de la función
-        const userActions = document.querySelector('.user-actions');
-        if (userActions) {
-            this.showCalendarButton(userActions);
+        const adminPanelBtn = document.getElementById('adminPanelBtn');
+        if (adminPanelBtn) {
+            adminPanelBtn.insertAdjacentElement('afterend', calendarBtn);
         } else {
-            console.warn('⚠️ No se encontró .user-actions para agregar el botón de calendario');
+            userActions.insertBefore(calendarBtn, userActions.firstChild);
         }
     }
-}
-
-// 👇 NUEVO MÉTODO PARA AÑADIR EL BOTÓN DE CALENDARIO (sin cambios)
-showCalendarButton(userActions) {
-    // Verificar si ya existe el botón para no duplicar
-    const existingCalendarBtn = document.getElementById('calendarBtn');
-    if (existingCalendarBtn) {
-        existingCalendarBtn.remove();
-    }
-
-    // Crear el botón de calendario
-    const calendarBtn = document.createElement('button');
-    calendarBtn.id = 'calendarBtn';
-    calendarBtn.className = 'calendar-btn';
-    calendarBtn.innerHTML = '📅 Calendario Educativo';
-    calendarBtn.onclick = () => {
-        window.location.href = '/calendar.html';
-    };
-
-    // Insertar al principio de las acciones (después de admin panel si existe)
-    const adminPanelBtn = document.getElementById('adminPanelBtn');
-    if (adminPanelBtn) {
-        adminPanelBtn.insertAdjacentElement('afterend', calendarBtn);
-    } else {
-        userActions.insertBefore(calendarBtn, userActions.firstChild);
-    }
-}
 
     hideUserInfo() {
         const userInfo = document.getElementById('userInfo');
@@ -220,7 +214,6 @@ showCalendarButton(userActions) {
         const modal = document.getElementById('updateProfileModal');
         if (!modal) return;
 
-        // Usar modal.querySelector para asegurar que los botones son los del modal de perfil
         const closeBtn = modal.querySelector('.close-modal');
         const cancelBtns = modal.querySelectorAll('.cancel-btn');
         const updateForm = document.getElementById('updateProfileForm');
@@ -325,7 +318,7 @@ showCalendarButton(userActions) {
             document.getElementById('updateApellidoNombre').value = user.apellidoNombre || '';
             document.getElementById('updateLegajo').value = user.legajo || '';
             document.getElementById('updateTurno').value = user.turno || '';
-            document.getElementById('updateArea').value = user.area || '';
+            document.getElementById('updateArea').value = user.area || ''; // 👈 NUEVO CAMPO
             document.getElementById('updateEmail').value = user.email || '';
             document.getElementById('updateCurrentPassword').value = '';
             document.getElementById('updatePassword').value = '';
@@ -448,6 +441,7 @@ showCalendarButton(userActions) {
             apellidoNombre: formData.get('apellidoNombre'),
             legajo: formData.get('legajo'),
             turno: formData.get('turno'),
+            area: formData.get('area'), // 👈 NUEVO CAMPO
             email: formData.get('email')
         };
 

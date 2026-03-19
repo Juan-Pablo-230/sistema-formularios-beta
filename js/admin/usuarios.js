@@ -1,4 +1,4 @@
-// usuarios.js - VERSIÓN CORREGIDA
+// usuarios.js - VERSIÓN CORREGIDA CON CAMPO ÁREA
 console.log('👥 Módulo de Usuarios cargado - Versión corregida');
 
 class UsuariosManager {
@@ -126,8 +126,8 @@ class UsuariosManager {
                 <td>${usuario.apellidoNombre || 'N/A'}</td>
                 <td>${usuario.legajo || 'N/A'}</td>
                 <td>${usuario.email || 'N/A'}</td>
-                <td>${usuario.area || 'N/A'}</td>
                 <td>${usuario.turno || 'N/A'}</td>
+                <td>${usuario.area || 'N/A'}</td> <!-- 👈 NUEVO CAMPO -->
                 <td><span class="role-badge ${usuario.role || 'user'}">${this.getRoleText(usuario.role)}</span></td>
                 <td>${usuario.fechaRegistro ? new Date(usuario.fechaRegistro).toLocaleString('es-AR') : 'N/A'}</td>
                 <td>
@@ -229,6 +229,7 @@ class UsuariosManager {
             document.getElementById('userLegajo').value = usuario.legajo || '';
             document.getElementById('userEmail').value = usuario.email || '';
             document.getElementById('userTurno').value = usuario.turno || '';
+            document.getElementById('userArea').value = usuario.area || ''; // 👈 NUEVO CAMPO
             document.getElementById('userRole').value = usuario.role || 'user';
             
             // En edición, la contraseña es opcional
@@ -251,7 +252,7 @@ class UsuariosManager {
         // Mostrar el modal
         modal.style.display = 'flex';
         
-        // Prevenir que el click en el modal lo cierre (esto es importante)
+        // Prevenir que el click en el modal lo cierre
         const modalContainer = modal.querySelector('.modal-container');
         if (modalContainer) {
             modalContainer.addEventListener('click', (e) => {
@@ -272,7 +273,7 @@ class UsuariosManager {
     }
 
     async guardarUsuario(event) {
-        event.preventDefault(); // ¡IMPORTANTE! Evita que la página se recargue
+        event.preventDefault();
         
         console.log('💾 Guardando usuario...');
         
@@ -282,7 +283,7 @@ class UsuariosManager {
         const legajo = document.getElementById('userLegajo').value.trim();
         const email = document.getElementById('userEmail').value.trim();
         const turno = document.getElementById('userTurno').value;
-        const area = document.getElementById('userArea').value;
+        const area = document.getElementById('userArea').value; // 👈 NUEVO CAMPO
         const role = document.getElementById('userRole').value;
         const password = document.getElementById('userPassword').value;
         
@@ -313,7 +314,7 @@ class UsuariosManager {
             legajo: legajo,
             email: email,
             turno: turno,
-            area: area,
+            area: area, // 👈 NUEVO CAMPO
             role: role
         };
         
@@ -355,7 +356,6 @@ class UsuariosManager {
     }
 
     mostrarMensajeModal(mensaje, tipo) {
-        // Buscar o crear contenedor de mensaje en el modal
         const modal = document.getElementById('userModal');
         const form = document.getElementById('userForm');
         
@@ -422,7 +422,6 @@ class UsuariosManager {
     }
 
     async verHistorial(usuarioId) {
-        // [Mantener el código existente de verHistorial]
         const usuario = this.data.find(u => u._id === usuarioId);
         if (!usuario) return;
 
@@ -516,6 +515,7 @@ class UsuariosManager {
                         <div><strong>📋 Legajo:</strong> ${usuario.legajo}</div>
                         <div><strong>📧 Email:</strong> ${usuario.email}</div>
                         <div><strong>⏰ Turno:</strong> ${usuario.turno || 'No especificado'}</div>
+                        <div><strong>🏥 Área:</strong> ${usuario.area || 'No especificada'}</div> <!-- 👈 NUEVO CAMPO -->
                     </div>
                 </div>
                 
@@ -567,6 +567,7 @@ class UsuariosManager {
                 'Legajo',
                 'Email',
                 'Turno',
+                'Área', // 👈 NUEVO CAMPO
                 'Rol',
                 'Fecha Registro'
             ];
@@ -603,6 +604,7 @@ class UsuariosManager {
                     escapar(usuario.legajo || ''),
                     escapar(usuario.email || ''),
                     escapar(usuario.turno || ''),
+                    escapar(usuario.area || ''), // 👈 NUEVO CAMPO
                     escapar(rolTexto),
                     escapar(fechaRegistro)
                 ].join(',');
@@ -704,27 +706,23 @@ class UsuariosManager {
             }
         });
 
-        // Evento submit del formulario - ¡CORREGIDO!
+        // Evento submit del formulario
         const form = document.getElementById('userForm');
         if (form) {
-            // Remover event listeners anteriores para evitar duplicados
             form.removeEventListener('submit', this.handleSubmit);
             
-            // Crear nuevo handler
             this.handleSubmit = (e) => {
                 e.preventDefault();
                 this.guardarUsuario(e);
             };
             
-            // Agregar nuevo event listener
             form.addEventListener('submit', this.handleSubmit);
         }
 
-        // Prevenir cierre del modal al hacer click en el overlay (esto evita que se cierre accidentalmente)
+        // Prevenir cierre del modal al hacer click en el overlay
         const userModal = document.getElementById('userModal');
         if (userModal) {
             userModal.addEventListener('click', (e) => {
-                // Solo cerrar si se hace click directamente en el overlay (fondo oscuro)
                 if (e.target === userModal) {
                     if (confirm('¿Estás seguro? Los cambios no guardados se perderán.')) {
                         this.cerrarModal();
