@@ -60,7 +60,7 @@ class AuthSystem {
             this.currentUser = JSON.parse(savedUser);
             console.log('Usuario encontrado en localStorage:', this.currentUser);
             
-            // 👇 NUEVO: Verificar si necesita migración al cargar la página
+            // Verificar si necesita migración al cargar la página
             setTimeout(() => {
                 this.checkMigrationNeeded();
             }, 500); // Pequeño delay para asegurar que el DOM esté listo
@@ -69,7 +69,7 @@ class AuthSystem {
         }
     }
 
-    // 👇 NUEVO MÉTODO: Verificar si necesita migración
+    // Verificar si necesita migración
     async checkMigrationNeeded() {
         // Si ya hay un modal activo, no hacer nada
         if (this.migrationModalActive) return;
@@ -208,7 +208,7 @@ class AuthSystem {
         }
     }
 
-    // Muestra el modal obligatorio de migración (AHORA CON CAMPO ÁREA)
+    // Muestra el modal obligatorio de migración (AHORA CON CAMPO ÁREA SIEMPRE VISIBLE)
     async showMigrationModal() {
         // Verificar si ya hay un modal activo
         if (this.migrationModalActive) {
@@ -222,7 +222,6 @@ class AuthSystem {
         return new Promise((resolve, reject) => {
             const user = this.currentUser;
             const needsPasswordChange = user.needsPasswordChange && !user.passwordAlreadyUpdated;
-            const needsArea = !user.area || user.area === '';
             
             // BLOQUEAR SCROLL DEL FONDO
             document.body.style.overflow = 'hidden';
@@ -264,35 +263,33 @@ class AuthSystem {
                     </p>
             `;
             
-            // CAMPO ÁREA - SIEMPRE OBLIGATORIO si no tiene área
-            if (needsArea) {
-                modalHTML += `
-                    <div style="margin-bottom: 25px; padding: 15px; background: #2a2f36; border-radius: 10px;">
-                        <h3 style="margin-bottom: 15px; color: #4285f4;">🏥 Área de Trabajo</h3>
-                        <p>Por favor, selecciona tu área de trabajo para completar tu perfil:</p>
-                        
-                        <div class="form-group" style="margin-bottom: 15px;">
-                            <label style="display: block; margin-bottom: 5px;">Área de Trabajo *</label>
-                            <select id="migrationArea" required style="
-                                width: 100%;
-                                padding: 10px;
-                                border: 2px solid #3d3d5c;
-                                border-radius: 8px;
-                                background: #1e1e2e;
-                                color: #e0e0e0;
-                                font-size: 14px;
-                            ">
-                                <option value="">Seleccione su área</option>
-                                <option value="Camilleros">Camilleros</option>
-                                <option value="Asistentes">Asistentes</option>
-                                <option value="Enfermeros">Enfermeros</option>
-                                <option value="Personal general del Sanatorio">Personal general del Sanatorio</option>
-                                <option value="Otros profesionales de la salud">Otros profesionales de la salud</option>
-                            </select>
-                        </div>
+            // CAMPO ÁREA - SIEMPRE VISIBLE (CORREGIDO)
+            modalHTML += `
+                <div style="margin-bottom: 25px; padding: 15px; background: #2a2f36; border-radius: 10px;">
+                    <h3 style="margin-bottom: 15px; color: #4285f4;">🏥 Área de Trabajo</h3>
+                    <p>Por favor, selecciona tu área de trabajo para completar tu perfil:</p>
+                    
+                    <div class="form-group" style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 5px;">Área de Trabajo *</label>
+                        <select id="migrationArea" required style="
+                            width: 100%;
+                            padding: 10px;
+                            border: 2px solid #3d3d5c;
+                            border-radius: 8px;
+                            background: #1e1e2e;
+                            color: #e0e0e0;
+                            font-size: 14px;
+                        ">
+                            <option value="">Seleccione su área</option>
+                            <option value="Camilleros">Camilleros</option>
+                            <option value="Asistentes">Asistentes</option>
+                            <option value="Enfermeros">Enfermeros</option>
+                            <option value="Personal general del Sanatorio">Personal general del Sanatorio</option>
+                            <option value="Otros profesionales de la salud">Otros profesionales de la salud</option>
+                        </select>
                     </div>
-                `;
-            }
+                </div>
+            `;
             
             // Agregar sección de cambio de contraseña SOLO si es necesario
             if (needsPasswordChange) {
@@ -444,15 +441,13 @@ class AuthSystem {
                 // Preparar datos base
                 const data = {};
                 
-                // Validar área SIEMPRE si no tiene
-                if (needsArea) {
-                    const area = overlay.querySelector('#migrationArea')?.value;
-                    if (!area) {
-                        this.showMigrationMessage(overlay, '❌ Debes seleccionar tu área de trabajo', 'error');
-                        return;
-                    }
-                    data.area = area;
+                // Validar área SIEMPRE (ahora siempre visible)
+                const area = overlay.querySelector('#migrationArea')?.value;
+                if (!area) {
+                    this.showMigrationMessage(overlay, '❌ Debes seleccionar tu área de trabajo', 'error');
+                    return;
                 }
+                data.area = area;
                 
                 // Validar y obtener valores SOLO si se requiere cambio de contraseña
                 if (needsPasswordChange) {
