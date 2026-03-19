@@ -49,7 +49,55 @@ class AuthSystem {
         console.log('AuthSystem MongoDB inicializado');
         this.apiBaseUrl = '';
         this.currentUser = null;
+        this.migrationModalActive = false; // Para evitar múltiples modales
         this.init();
+    }
+
+    async init() {
+        console.log('Inicializando sistema de auth con MongoDB...');
+        const savedUser = localStorage.getItem('currentUser');
+        if (savedUser) {
+            this.currentUser = JSON.parse(savedUser);
+            console.log('Usuario encontrado en localStorage:', this.currentUser);
+            
+            // 👇 NUEVO: Verificar si necesita migración al cargar la página
+            setTimeout(() => {
+                this.checkMigrationNeeded();
+            }, 500); // Pequeño delay para asegurar que el DOM esté listo
+        } else {
+            console.log('No hay usuario en localStorage');
+        }
+    }
+
+    // 👇 NUEVO MÉTODO: Verificar si necesita migración
+    async checkMigrationNeeded() {
+        // Si ya hay un modal activo, no hacer nada
+        if (this.migrationModalActive) return;
+        
+        // Si no hay usuario logueado, no hacer nada
+        if (!this.isLoggedIn()) return;
+        
+        const user = this.currentUser;
+        
+        // Verificar si necesita migración (needsPasswordChange true Y no ha actualizado)
+        const needsMigration = user.needsPasswordChange && !user.passwordAlreadyUpdated;
+        
+        // Verificar si le falta el área
+        const needsArea = !user.area || user.area === '';
+        
+        console.log('🔍 Verificando necesidad de migración:', {
+            needsMigration,
+            needsArea,
+            area: user.area
+        });
+        
+        // Si necesita migración O le falta el área, mostrar modal
+        if (needsMigration || needsArea) {
+            console.log('⚠️ Usuario necesita completar datos, mostrando modal...');
+            await this.showMigrationModal();
+        } else {
+            console.log('✅ Usuario ya tiene todos los datos completos');
+        }
     }
 
     async makeRequest(endpoint, data = null, method = 'POST') {
@@ -126,17 +174,6 @@ class AuthSystem {
         }
     }
 
-    async init() {
-        console.log('Inicializando sistema de auth con MongoDB...');
-        const savedUser = localStorage.getItem('currentUser');
-        if (savedUser) {
-            this.currentUser = JSON.parse(savedUser);
-            console.log('Usuario encontrado en localStorage:', this.currentUser);
-        } else {
-            console.log('No hay usuario en localStorage');
-        }
-    }
-
     async login(identifier, password) {
         try {
             const result = await this.makeRequest('/auth/login', {
@@ -154,16 +191,14 @@ class AuthSystem {
             console.log('✅ Login exitoso MongoDB:', this.currentUser.apellidoNombre);
             console.log('📊 Estado de migración:', {
                 needsPasswordChange: this.currentUser.needsPasswordChange,
-                passwordAlreadyUpdated: this.currentUser.passwordAlreadyUpdated
+                passwordAlreadyUpdated: this.currentUser.passwordAlreadyUpdated,
+                area: this.currentUser.area
             });
             
-            // Solo mostrar modal si necesita cambiar contraseña Y no ha actualizado ya
-            if (this.currentUser.needsPasswordChange && !this.currentUser.passwordAlreadyUpdated) {
-                console.log('⚠️ Usuario necesita migración, mostrando modal...');
-                await this.showMigrationModal();
-            } else {
-                console.log('✅ Usuario ya migrado o no necesita cambios');
-            }
+            // Verificar si necesita migración después del login
+            setTimeout(() => {
+                this.checkMigrationNeeded();
+            }, 500);
             
             return this.currentUser;
             
@@ -175,15 +210,19 @@ class AuthSystem {
 
     // Muestra el modal obligatorio de migración (AHORA CON CAMPO ÁREA)
     async showMigrationModal() {
-        // Verificar si ya actualizó
-        if (this.currentUser.passwordAlreadyUpdated) {
-            console.log('✅ Usuario ya actualizó su contraseña, omitiendo modal');
-            return Promise.resolve();
+        // Verificar si ya hay un modal activo
+        if (this.migrationModalActive) {
+            console.log('⚠️ Ya hay un modal de migración activo');
+            return Promise.reject('Modal ya activo');
         }
+        
+        // Marcar que hay un modal activo
+        this.migrationModalActive = true;
 
         return new Promise((resolve, reject) => {
             const user = this.currentUser;
-            const needsPasswordChange = user.needsPasswordChange;
+            const needsPasswordChange = user.needsPasswordChange && !user.passwordAlreadyUpdated;
+            const needsArea = !user.area || user.area === '';
             
             // BLOQUEAR SCROLL DEL FONDO
             document.body.style.overflow = 'hidden';
@@ -225,33 +264,35 @@ class AuthSystem {
                     </p>
             `;
             
-            // CAMPO ÁREA - SIEMPRE OBLIGATORIO (aunque no cambie contraseña)
-            modalHTML += `
-                <div style="margin-bottom: 25px; padding: 15px; background: #2a2f36; border-radius: 10px;">
-                    <h3 style="margin-bottom: 15px; color: #4285f4;">🏥 Área de Trabajo</h3>
-                    <p>Por favor, selecciona tu área de trabajo para completar tu perfil:</p>
-                    
-                    <div class="form-group" style="margin-bottom: 15px;">
-                        <label style="display: block; margin-bottom: 5px;">Área de Trabajo *</label>
-                        <select id="migrationArea" required style="
-                            width: 100%;
-                            padding: 10px;
-                            border: 2px solid #3d3d5c;
-                            border-radius: 8px;
-                            background: #1e1e2e;
-                            color: #e0e0e0;
-                            font-size: 14px;
-                        ">
-                            <option value="">Seleccione su área</option>
-                            <option value="Camilleros">Camilleros</option>
-                            <option value="Asistentes">Asistentes</option>
-                            <option value="Enfermeros">Enfermeros</option>
-                            <option value="Personal general del Sanatorio">Personal general del Sanatorio</option>
-                            <option value="Otros profesionales de la salud">Otros profesionales de la salud</option>
-                        </select>
+            // CAMPO ÁREA - SIEMPRE OBLIGATORIO si no tiene área
+            if (needsArea) {
+                modalHTML += `
+                    <div style="margin-bottom: 25px; padding: 15px; background: #2a2f36; border-radius: 10px;">
+                        <h3 style="margin-bottom: 15px; color: #4285f4;">🏥 Área de Trabajo</h3>
+                        <p>Por favor, selecciona tu área de trabajo para completar tu perfil:</p>
+                        
+                        <div class="form-group" style="margin-bottom: 15px;">
+                            <label style="display: block; margin-bottom: 5px;">Área de Trabajo *</label>
+                            <select id="migrationArea" required style="
+                                width: 100%;
+                                padding: 10px;
+                                border: 2px solid #3d3d5c;
+                                border-radius: 8px;
+                                background: #1e1e2e;
+                                color: #e0e0e0;
+                                font-size: 14px;
+                            ">
+                                <option value="">Seleccione su área</option>
+                                <option value="Camilleros">Camilleros</option>
+                                <option value="Asistentes">Asistentes</option>
+                                <option value="Enfermeros">Enfermeros</option>
+                                <option value="Personal general del Sanatorio">Personal general del Sanatorio</option>
+                                <option value="Otros profesionales de la salud">Otros profesionales de la salud</option>
+                            </select>
+                        </div>
                     </div>
-                </div>
-            `;
+                `;
+            }
             
             // Agregar sección de cambio de contraseña SOLO si es necesario
             if (needsPasswordChange) {
@@ -371,9 +412,10 @@ class AuthSystem {
             overlay.innerHTML = modalHTML;
             document.body.appendChild(overlay);
             
-            // Función para restaurar scroll al cerrar
+            // Función para restaurar scroll y limpiar estado
             const restaurarScroll = () => {
                 document.body.style.overflow = '';
+                this.migrationModalActive = false;
                 if (overlay.parentNode) {
                     overlay.remove();
                 }
@@ -399,40 +441,18 @@ class AuthSystem {
             
             migrateBtn.addEventListener('click', async () => {
                 
-                // Validar área primero (SIEMPRE)
-                const area = overlay.querySelector('#migrationArea')?.value;
-                if (!area) {
-                    this.showMigrationMessage(overlay, '❌ Debes seleccionar tu área de trabajo', 'error');
-                    return;
-                }
+                // Preparar datos base
+                const data = {};
                 
-                // AVISO DE CONFIRMACIÓN (RESTAURADO)
-                const advertencia = confirm(
-                    '⚠️  CAMBIO DE CONTRASEÑA  ⚠️\n\n' +
-                    'Al cambiar la contraseña:\n\n' +
-                    '❌ NO podrás acceder a la VERSIÓN ESTABLE\n' +
-                    '   (sistema-formularios-production)\n\n' +
-                    '✅ Solo podrás usar la VERSIÓN BETA\n' +
-                    '   (sistema-formulario-beta)\n\n' +
-                    '¿Estás seguro de continuar?'
-                );
-
-                if (!advertencia) {
-                    this.showMigrationMessage(overlay, 'Cambio de contraseña cancelado. Serás redirigido a la versión estable.', 'info');
-                    
-                    // Redirigir a la versión estable después de 2 segundos
-                    setTimeout(() => {
-                        restaurarScroll();
-                        window.location.href = 'https://sistema-formularios-production.up.railway.app/';
-                    }, 2000);
-                    
-                    return;
+                // Validar área SIEMPRE si no tiene
+                if (needsArea) {
+                    const area = overlay.querySelector('#migrationArea')?.value;
+                    if (!area) {
+                        this.showMigrationMessage(overlay, '❌ Debes seleccionar tu área de trabajo', 'error');
+                        return;
+                    }
+                    data.area = area;
                 }
-                
-                // Preparar datos base (incluir área)
-                const data = {
-                    area: area  // 👈 SIEMPRE enviar área
-                };
                 
                 // Validar y obtener valores SOLO si se requiere cambio de contraseña
                 if (needsPasswordChange) {
@@ -487,7 +507,7 @@ class AuthSystem {
                         this.currentUser = result.data;
                         localStorage.setItem('currentUser', JSON.stringify(this.currentUser));
                         
-                        this.showMigrationMessage(overlay, '✅ Migración exitosa. Recargando...', 'success');
+                        this.showMigrationMessage(overlay, '✅ Datos actualizados correctamente. Recargando...', 'success');
                         
                         setTimeout(() => {
                             restaurarScroll();
@@ -506,8 +526,10 @@ class AuthSystem {
             // Permitir cerrar el modal haciendo clic fuera
             overlay.addEventListener('click', (e) => {
                 if (e.target === overlay) {
-                    if (confirm('¿Estás seguro? Si cierras esta ventana, no podrás acceder al sistema.')) {
+                    if (confirm('¿Estás seguro? Si cierras esta ventana, no podrás acceder al sistema hasta completar tus datos.')) {
                         restaurarScroll();
+                        // Redirigir al login o mostrar mensaje
+                        window.location.href = '/index.html';
                     }
                 }
             });
