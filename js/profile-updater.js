@@ -79,7 +79,7 @@ class ProfileUpdater {
             }
             
             // Agregar área a la información mostrada
-            userName.textContent = `👤 ${user.apellidoNombre} - Legajo: ${user.legajo} - ${roleBadge}`;
+            userName.textContent = `👤 ${user.apellidoNombre} - Legajo: ${user.legajo}${roleBadge}`;
             userInfo.style.display = 'block';
 
             // Mostrar botón de material

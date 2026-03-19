@@ -173,7 +173,7 @@ class AuthSystem {
         }
     }
 
-    // Muestra el modal obligatorio de migración (VERSIÓN CORREGIDA CON AVISO Y SCROLL BLOQUEADO)
+    // Muestra el modal obligatorio de migración (AHORA CON CAMPO ÁREA)
     async showMigrationModal() {
         // Verificar si ya actualizó
         if (this.currentUser.passwordAlreadyUpdated) {
@@ -221,8 +221,36 @@ class AuthSystem {
                 ">
                     <h2 style="text-align: center; margin-bottom: 20px; color: #fff;">⚠️ Acción Requerida</h2>
                     <p style="text-align: center; margin-bottom: 20px;">
-                        Por motivos de seguridad, debes realizar los siguientes pasos antes de continuar:
+                        Por motivos de seguridad y para completar tu perfil, debes realizar los siguientes pasos antes de continuar:
                     </p>
+            `;
+            
+            // CAMPO ÁREA - SIEMPRE OBLIGATORIO (aunque no cambie contraseña)
+            modalHTML += `
+                <div style="margin-bottom: 25px; padding: 15px; background: #2a2f36; border-radius: 10px;">
+                    <h3 style="margin-bottom: 15px; color: #4285f4;">🏥 Área de Trabajo</h3>
+                    <p>Por favor, selecciona tu área de trabajo para completar tu perfil:</p>
+                    
+                    <div class="form-group" style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 5px;">Área de Trabajo *</label>
+                        <select id="migrationArea" required style="
+                            width: 100%;
+                            padding: 10px;
+                            border: 2px solid #3d3d5c;
+                            border-radius: 8px;
+                            background: #1e1e2e;
+                            color: #e0e0e0;
+                            font-size: 14px;
+                        ">
+                            <option value="">Seleccione su área</option>
+                            <option value="Camilleros">Camilleros</option>
+                            <option value="Asistentes">Asistentes</option>
+                            <option value="Enfermeros">Enfermeros</option>
+                            <option value="Personal general del Sanatorio">Personal general del Sanatorio</option>
+                            <option value="Otros profesionales de la salud">Otros profesionales de la salud</option>
+                        </select>
+                    </div>
+                </div>
             `;
             
             // Agregar sección de cambio de contraseña SOLO si es necesario
@@ -371,6 +399,13 @@ class AuthSystem {
             
             migrateBtn.addEventListener('click', async () => {
                 
+                // Validar área primero (SIEMPRE)
+                const area = overlay.querySelector('#migrationArea')?.value;
+                if (!area) {
+                    this.showMigrationMessage(overlay, '❌ Debes seleccionar tu área de trabajo', 'error');
+                    return;
+                }
+                
                 // AVISO DE CONFIRMACIÓN (RESTAURADO)
                 const advertencia = confirm(
                     '⚠️  CAMBIO DE CONTRASEÑA  ⚠️\n\n' +
@@ -394,8 +429,10 @@ class AuthSystem {
                     return;
                 }
                 
-                // Preparar datos base
-                const data = {};
+                // Preparar datos base (incluir área)
+                const data = {
+                    area: area  // 👈 SIEMPRE enviar área
+                };
                 
                 // Validar y obtener valores SOLO si se requiere cambio de contraseña
                 if (needsPasswordChange) {
