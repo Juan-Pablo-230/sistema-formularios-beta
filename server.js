@@ -659,6 +659,305 @@ app.delete('/api/admin/usuarios/:id', async (req, res) => {
     }
 });
 
+// ==================== RUTAS PARA CLASES PÚBLICAS (completo) ====================
+app.get('/api/clases-publicas', async (req, res) => {
+    try {
+        const db = await mongoDB.getDatabaseSafe('formulario');
+        const clases = await db.collection('clases-publicas')
+            .find({})
+            .sort({ fechaClase: -1 })
+            .toArray();
+        
+        res.json({ success: true, data: clases });
+    } catch (error) {
+        console.error('❌ Error obteniendo clases públicas:', error);
+        res.status(500).json({ success: false, message: 'Error interno del servidor' });
+    }
+});
+
+// 👇 ESTA ES LA RUTA QUE FALTA - /api/clases-publicas/publicadas
+app.get('/api/clases-publicas/publicadas', async (req, res) => {
+    try {
+        const db = await mongoDB.getDatabaseSafe('formulario');
+        const clases = await db.collection('clases-publicas')
+            .find({ publicada: true })
+            .sort({ fechaClase: -1 })
+            .toArray();
+        
+        res.json({ 
+            success: true, 
+            data: clases,
+            serverTime: Date.now()
+        });
+    } catch (error) {
+        console.error('❌ Error obteniendo clases publicadas:', error);
+        res.status(500).json({ success: false, message: 'Error interno del servidor' });
+    }
+});
+
+app.get('/api/clases-publicas/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        console.log(`📥 GET /api/clases-publicas/${id}`);
+        
+        if (!ObjectId.isValid(id)) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'ID de clase inválido' 
+            });
+        }
+        
+        const db = await mongoDB.getDatabaseSafe('formulario');
+        
+        const clase = await db.collection('clases-publicas').findOne({ 
+            _id: new ObjectId(id) 
+        });
+        
+        if (!clase) {
+            return res.status(404).json({ 
+                success: false, 
+                message: 'Clase no encontrada' 
+            });
+        }
+        
+        res.json({ 
+            success: true, 
+            data: clase,
+            serverTime: Date.now()
+        });
+        
+    } catch (error) {
+        console.error('❌ Error obteniendo clase por ID:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Error interno del servidor',
+            error: error.message 
+        });
+    }
+});
+
+app.post('/api/clases-publicas', async (req, res) => {
+    try {
+        const userHeader = req.headers['user-id'];
+        
+        if (!userHeader) {
+            return res.status(401).json({ success: false, message: 'No autenticado' });
+        }
+        
+        const db = await mongoDB.getDatabaseSafe('formulario');
+        
+        const usuario = await db.collection('usuarios').findOne({ 
+            _id: new ObjectId(userHeader) 
+        });
+        
+        if (!usuario || (usuario.role !== 'admin' && usuario.role !== 'advanced')) {
+            return res.status(403).json({ 
+                success: false, 
+                message: 'Solo administradores y usuarios avanzados pueden crear clases' 
+            });
+        }
+        
+        const { nombre, descripcion, fechaClase, instructores, lugar, enlaceFormulario, publicada } = req.body;
+        
+        if (!nombre || !fechaClase) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Nombre y fecha son obligatorios' 
+            });
+        }
+        
+        let fecha;
+        if (fechaClase.includes('T')) {
+            const [fechaPart, horaPart] = fechaClase.split('T');
+            const [year, month, day] = fechaPart.split('-').map(Number);
+            const [hour, minute] = horaPart.split(':').map(Number);
+            const horaUTC = hour + 3;
+            fecha = new Date(Date.UTC(year, month - 1, day, horaUTC, minute, 0));
+        } else {
+            const [year, month, day] = fechaClase.split('-').map(Number);
+            fecha = new Date(Date.UTC(year, month - 1, day, 3, 0, 0));
+        }
+        
+        const nuevaClase = {
+            nombre,
+            descripcion: descripcion || '',
+            fechaClase: fecha,
+            instructores: instructores || [],
+            lugar: lugar || '',
+            enlaceFormulario: enlaceFormulario || '',
+            publicada: publicada === true,
+            fechaCreacion: new Date(),
+            creadoPor: new ObjectId(userHeader)
+        };
+        
+        const result = await db.collection('clases-publicas').insertOne(nuevaClase);
+        
+        res.json({ 
+            success: true, 
+            message: 'Clase pública creada exitosamente',
+            data: { ...nuevaClase, _id: result.insertedId }
+        });
+        
+    } catch (error) {
+        console.error('❌ Error creando clase pública:', error);
+        res.status(500).json({ success: false, message: 'Error interno del servidor' });
+    }
+});
+
+app.put('/api/clases-publicas/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const userHeader = req.headers['user-id'];
+        
+        if (!userHeader || !ObjectId.isValid(id)) {
+            return res.status(401).json({ success: false, message: 'Solicitud inválida' });
+        }
+        
+        const db = await mongoDB.getDatabaseSafe('formulario');
+        
+        const usuario = await db.collection('usuarios').findOne({ 
+            _id: new ObjectId(userHeader) 
+        });
+        
+        if (!usuario || (usuario.role !== 'admin' && usuario.role !== 'advanced')) {
+            return res.status(403).json({ 
+                success: false, 
+                message: 'Solo administradores y usuarios avanzados pueden actualizar clases' 
+            });
+        }
+        
+        const { nombre, descripcion, fechaClase, instructores, lugar, enlaceFormulario, publicada } = req.body;
+        
+        if (!nombre || !fechaClase) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Nombre y fecha son obligatorios' 
+            });
+        }
+        
+        let fecha;
+        if (fechaClase.includes('T')) {
+            const [fechaPart, horaPart] = fechaClase.split('T');
+            const [year, month, day] = fechaPart.split('-').map(Number);
+            const [hour, minute] = horaPart.split(':').map(Number);
+            const horaUTC = hour + 3;
+            fecha = new Date(Date.UTC(year, month - 1, day, horaUTC, minute, 0));
+        } else {
+            const [year, month, day] = fechaClase.split('-').map(Number);
+            fecha = new Date(Date.UTC(year, month - 1, day, 3, 0, 0));
+        }
+        
+        const updateData = {
+            $set: {
+                nombre,
+                descripcion: descripcion || '',
+                fechaClase: fecha,
+                instructores: instructores || [],
+                lugar: lugar || '',
+                enlaceFormulario: enlaceFormulario || '',
+                publicada: publicada === true,
+                fechaActualizacion: new Date()
+            }
+        };
+        
+        const result = await db.collection('clases-publicas').updateOne(
+            { _id: new ObjectId(id) },
+            updateData
+        );
+        
+        if (result.matchedCount === 0) {
+            return res.status(404).json({ success: false, message: 'Clase no encontrada' });
+        }
+        
+        res.json({ success: true, message: 'Clase pública actualizada exitosamente' });
+        
+    } catch (error) {
+        console.error('❌ Error actualizando clase pública:', error);
+        res.status(500).json({ success: false, message: 'Error interno del servidor' });
+    }
+});
+
+app.put('/api/clases-publicas/:id/visibilidad', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const userHeader = req.headers['user-id'];
+        const { publicada } = req.body;
+        
+        if (!userHeader || !ObjectId.isValid(id)) {
+            return res.status(401).json({ success: false, message: 'Solicitud inválida' });
+        }
+        
+        const db = await mongoDB.getDatabaseSafe('formulario');
+        
+        const usuario = await db.collection('usuarios').findOne({ 
+            _id: new ObjectId(userHeader) 
+        });
+        
+        if (!usuario || (usuario.role !== 'admin' && usuario.role !== 'advanced')) {
+            return res.status(403).json({ 
+                success: false, 
+                message: 'Solo administradores y usuarios avanzados pueden cambiar visibilidad' 
+            });
+        }
+        
+        const result = await db.collection('clases-publicas').updateOne(
+            { _id: new ObjectId(id) },
+            { $set: { publicada: publicada === true } }
+        );
+        
+        if (result.matchedCount === 0) {
+            return res.status(404).json({ success: false, message: 'Clase no encontrada' });
+        }
+        
+        res.json({ 
+            success: true, 
+            message: publicada ? 'Clase publicada exitosamente' : 'Clase ocultada exitosamente' 
+        });
+        
+    } catch (error) {
+        console.error('❌ Error cambiando visibilidad:', error);
+        res.status(500).json({ success: false, message: 'Error interno del servidor' });
+    }
+});
+
+app.delete('/api/clases-publicas/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const userHeader = req.headers['user-id'];
+        
+        if (!userHeader || !ObjectId.isValid(id)) {
+            return res.status(401).json({ success: false, message: 'Solicitud inválida' });
+        }
+        
+        const db = await mongoDB.getDatabaseSafe('formulario');
+        
+        const usuario = await db.collection('usuarios').findOne({ 
+            _id: new ObjectId(userHeader) 
+        });
+        
+        if (!usuario || (usuario.role !== 'admin' && usuario.role !== 'advanced')) {
+            return res.status(403).json({ 
+                success: false, 
+                message: 'Solo administradores y usuarios avanzados pueden eliminar clases' 
+            });
+        }
+        
+        const result = await db.collection('clases-publicas').deleteOne({
+            _id: new ObjectId(id)
+        });
+        
+        if (result.deletedCount === 0) {
+            return res.status(404).json({ success: false, message: 'Clase no encontrada' });
+        }
+        
+        res.json({ success: true, message: 'Clase pública eliminada exitosamente' });
+        
+    } catch (error) {
+        console.error('❌ Error eliminando clase pública:', error);
+        res.status(500).json({ success: false, message: 'Error interno del servidor' });
+    }
+});
+
 // ==================== RUTAS DE USUARIO (para perfil y migración) ====================
 app.put('/api/usuarios/perfil', async (req, res) => {
     try {
