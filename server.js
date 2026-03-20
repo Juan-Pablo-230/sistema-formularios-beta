@@ -959,6 +959,8 @@ app.delete('/api/clases-publicas/:id', async (req, res) => {
 });
 
 // ==================== RUTAS DE USUARIO (para perfil y migración) ====================
+
+// Ruta para actualizar perfil (existente)
 app.put('/api/usuarios/perfil', async (req, res) => {
     try {
         const userHeader = req.headers['user-id'];
@@ -972,10 +974,8 @@ app.put('/api/usuarios/perfil', async (req, res) => {
             });
         }
         
-        // Agregar 'area' a la desestructuración
         const { apellidoNombre, legajo, turno, area, email, password, currentPassword } = req.body;
         
-        // Validaciones - agregar area
         if (!apellidoNombre || !legajo || !turno || !area || !email || !currentPassword) {
             return res.status(400).json({ 
                 success: false, 
@@ -1028,7 +1028,7 @@ app.put('/api/usuarios/perfil', async (req, res) => {
             apellidoNombre,
             legajo: legajo.toString(),
             turno,
-            area, // 👈 NUEVO CAMPO
+            area,
             email
         };
         
@@ -1076,34 +1076,61 @@ app.put('/api/usuarios/perfil', async (req, res) => {
     }
 });
 
-// 👇 RUTA DE MIGRACIÓN ÚNICA Y CORREGIDA (eliminar la duplicada anterior)
+// 👇 ÚNICA RUTA DE MIGRACIÓN - CORREGIDA Y VERIFICADA
 app.post('/api/usuarios/migrar', async (req, res) => {
     try {
         const userHeader = req.headers['user-id'];
         
-        console.log('🔄 Solicitud de migración para usuario ID:', userHeader);
+        console.log('🔄 SOLICITUD DE MIGRACIÓN RECIBIDA');
+        console.log('- Headers:', req.headers);
+        console.log('- Body:', req.body);
+        console.log('- User ID:', userHeader);
         
         if (!userHeader) {
+            console.log('❌ No hay user-id en headers');
             return res.status(401).json({ 
                 success: false, 
-                message: 'No autenticado' 
+                message: 'No autenticado - Falta user-id' 
             });
         }
         
-        const { currentPassword, newPassword, area } = req.body;
+        const { area, currentPassword, newPassword } = req.body;
+        
+        console.log('📦 Datos recibidos:', { area, tieneCurrentPassword: !!currentPassword, tieneNewPassword: !!newPassword });
+        
+        // Validar que al menos venga área o contraseña
+        if (!area && !currentPassword && !newPassword) {
+            return res.status(400).json({
+                success: false,
+                message: 'No hay datos para actualizar'
+            });
+        }
         
         const db = await mongoDB.getDatabaseSafe('formulario');
         
-        const usuario = await db.collection('usuarios').findOne({ 
-            _id: new ObjectId(userHeader) 
-        });
+        // Buscar usuario
+        let usuario;
+        try {
+            usuario = await db.collection('usuarios').findOne({ 
+                _id: new ObjectId(userHeader) 
+            });
+        } catch (idError) {
+            console.error('❌ Error con ObjectId:', idError);
+            return res.status(400).json({
+                success: false,
+                message: 'ID de usuario inválido'
+            });
+        }
         
         if (!usuario) {
+            console.log('❌ Usuario no encontrado');
             return res.status(404).json({ 
                 success: false, 
                 message: 'Usuario no encontrado' 
             });
         }
+        
+        console.log('👤 Usuario encontrado:', usuario.apellidoNombre);
         
         // Preparar datos de actualización
         const updateData = {
@@ -1111,45 +1138,66 @@ app.post('/api/usuarios/migrar', async (req, res) => {
             fechaMigracion: new Date()
         };
         
-        // Si se proporciona área, actualizarla
+        // Si viene área, actualizarla
         if (area) {
             updateData.area = area;
-            console.log('🏥 Actualizando área a:', area);
+            console.log('🏥 Área a actualizar:', area);
         }
         
-        // Si se requiere cambio de contraseña
-        if (newPassword || currentPassword) {
-            // Verificar contraseña actual si se va a cambiar
-            if (currentPassword) {
-                const currentPasswordMatches = (usuario.password === currentPassword) || 
-                                               (usuario.password === hashPassword(currentPassword));
-                if (!currentPasswordMatches) {
-                    return res.status(401).json({ 
-                        success: false, 
-                        message: 'Contraseña actual incorrecta' 
-                    });
-                }
+        // Si viene nueva contraseña, validar y actualizar
+        if (newPassword) {
+            console.log('🔐 Procesando cambio de contraseña');
+            
+            // Validar que venga la contraseña actual
+            if (!currentPassword) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Se requiere la contraseña actual para cambiar la contraseña'
+                });
             }
             
-            if (newPassword) {
-                // Validar nueva contraseña
-                if (newPassword.length < 6) {
-                    return res.status(400).json({
-                        success: false,
-                        message: 'La nueva contraseña debe tener al menos 6 caracteres'
-                    });
-                }
-                if (newPassword.length > 15) {
-                    return res.status(400).json({
-                        success: false,
-                        message: 'La nueva contraseña no puede exceder los 15 caracteres'
-                    });
-                }
-                updateData.password = hashPassword(newPassword);
+            // Verificar contraseña actual
+            const currentPasswordMatches = (usuario.password === currentPassword) || 
+                                           (usuario.password === hashPassword(currentPassword));
+            if (!currentPasswordMatches) {
+                console.log('❌ Contraseña actual incorrecta');
+                return res.status(401).json({ 
+                    success: false, 
+                    message: 'Contraseña actual incorrecta' 
+                });
+            }
+            
+            // Validar nueva contraseña
+            if (newPassword.length < 6) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'La nueva contraseña debe tener al menos 6 caracteres'
+                });
+            }
+            if (newPassword.length > 15) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'La nueva contraseña no puede exceder los 15 caracteres'
+                });
+            }
+            
+            updateData.password = hashPassword(newPassword);
+            console.log('✅ Nueva contraseña hasheada');
+        } else if (currentPassword) {
+            // Si solo viene currentPassword sin newPassword, verificar que sea correcta
+            // (esto puede ser útil para validar antes de actualizar área)
+            const currentPasswordMatches = (usuario.password === currentPassword) || 
+                                           (usuario.password === hashPassword(currentPassword));
+            if (!currentPasswordMatches) {
+                return res.status(401).json({ 
+                    success: false, 
+                    message: 'Contraseña actual incorrecta' 
+                });
             }
         }
         
         // Actualizar usuario
+        console.log('📤 Actualizando usuario con:', updateData);
         await db.collection('usuarios').updateOne(
             { _id: new ObjectId(userHeader) },
             { $set: updateData }
@@ -1161,7 +1209,7 @@ app.post('/api/usuarios/migrar', async (req, res) => {
             { projection: { password: 0 } }
         );
         
-        console.log('✅ Usuario migrado exitosamente:', usuarioActualizado.apellidoNombre);
+        console.log('✅ Usuario migrado exitosamente');
         console.log('📊 Datos actualizados:', {
             area: usuarioActualizado.area,
             passwordUpdated: usuarioActualizado.passwordUpdated
@@ -1174,15 +1222,17 @@ app.post('/api/usuarios/migrar', async (req, res) => {
         });
         
     } catch (error) {
-        console.error('❌ Error en migración:', error);
+        console.error('❌ ERROR en migración:', error);
+        console.error('Stack:', error.stack);
         res.status(500).json({ 
             success: false, 
-            message: 'Error interno del servidor',
+            message: 'Error interno del servidor: ' + error.message,
             error: error.message 
         });
     }
 });
 
+// Ruta para eliminar cuenta
 app.delete('/api/usuarios/cuenta', async (req, res) => {
     try {
         const userHeader = req.headers['user-id'];
