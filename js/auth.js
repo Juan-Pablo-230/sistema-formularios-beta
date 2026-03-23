@@ -424,10 +424,10 @@ async showMigrationModal() {
             }
         };
         
-        // ========== FUNCIONALIDAD DEL OJITO (VERSIÓN QUE REEMPLAZA EL INPUT) ==========
+        // ========== FUNCIONALIDAD DEL OJITO (VERSIÓN DEFINITIVA) ==========
 setTimeout(() => {
     const toggleButtons = overlay.querySelectorAll('.toggle-password');
-    console.log('🔍 Botones toggle encontrados en modal de migración:', toggleButtons.length);
+    console.log('🔍 Botones toggle encontrados:', toggleButtons.length);
     
     toggleButtons.forEach(btn => {
         const newBtn = btn.cloneNode(true);
@@ -440,52 +440,62 @@ setTimeout(() => {
             const targetId = this.getAttribute('data-target');
             const originalInput = document.getElementById(targetId);
             
-            if (!originalInput) {
-                console.warn('⚠️ Input no encontrado:', targetId);
-                return;
-            }
+            if (!originalInput) return;
             
             const parentDiv = originalInput.parentNode;
             const currentValue = originalInput.value;
-            const inputStyles = originalInput.style.cssText;
-            const inputClass = originalInput.className;
-            const isRequired = originalInput.required;
-            const maxLength = originalInput.maxLength;
-            const inputName = originalInput.name;
             
-            // Si está en modo password, cambiar a texto
-            if (originalInput.type === 'password') {
-                // Crear un input de texto
+            // Verificar si ya existe un campo visible alternativo
+            const existingTextInput = parentDiv.querySelector('.temp-text-input');
+            
+            if (originalInput.type === 'password' && !existingTextInput) {
+                // Crear un input de texto temporal
                 const textInput = document.createElement('input');
                 textInput.type = 'text';
-                textInput.id = targetId;
-                textInput.name = inputName;
+                textInput.className = 'temp-text-input';
                 textInput.value = currentValue;
-                textInput.required = isRequired;
-                if (maxLength) textInput.maxLength = maxLength;
-                textInput.style.cssText = inputStyles;
-                textInput.className = inputClass;
+                textInput.style.cssText = originalInput.style.cssText;
+                textInput.style.position = 'absolute';
+                textInput.style.left = '0';
+                textInput.style.top = '0';
+                textInput.style.width = '100%';
+                textInput.style.height = '100%';
+                textInput.style.padding = originalInput.style.padding;
+                textInput.style.border = originalInput.style.border;
+                textInput.style.background = originalInput.style.background;
+                textInput.style.color = originalInput.style.color;
                 
-                // Reemplazar
-                parentDiv.replaceChild(textInput, originalInput);
+                // Ocultar el input original
+                originalInput.style.opacity = '0';
+                originalInput.style.position = 'relative';
+                originalInput.style.zIndex = '0';
+                
+                // Posicionar el contenedor relativamente
+                parentDiv.style.position = 'relative';
+                
+                // Agregar el input de texto encima
+                parentDiv.appendChild(textInput);
+                
+                // Sincronizar valores cuando se escribe en el texto
+                textInput.addEventListener('input', function() {
+                    originalInput.value = this.value;
+                });
+                
+                // Sincronizar si se escribe en el original (por si acaso)
+                originalInput.addEventListener('input', function() {
+                    if (textInput) textInput.value = this.value;
+                });
+                
                 this.textContent = '🙈';
-                console.log('👁️ Contraseña visible (input texto)');
-            } 
-            // Si está en modo texto, volver a password
-            else {
-                const passwordInput = document.createElement('input');
-                passwordInput.type = 'password';
-                passwordInput.id = targetId;
-                passwordInput.name = inputName;
-                passwordInput.value = currentValue;
-                passwordInput.required = isRequired;
-                if (maxLength) passwordInput.maxLength = maxLength;
-                passwordInput.style.cssText = inputStyles;
-                passwordInput.className = inputClass;
+                console.log('👁️ Contraseña visible para:', targetId);
                 
-                parentDiv.replaceChild(passwordInput, originalInput);
+            } else if (existingTextInput) {
+                // Eliminar el input temporal y restaurar el original
+                existingTextInput.remove();
+                originalInput.style.opacity = '1';
+                originalInput.style.position = '';
                 this.textContent = '👁️';
-                console.log('👁️ Contraseña oculta (input password)');
+                console.log('👁️ Contraseña oculta para:', targetId);
             }
         });
     });
