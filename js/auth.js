@@ -419,19 +419,24 @@ async showMigrationModal() {
             }
         };
         
-        // Funcionalidad de mostrar/ocultar contraseña
-        overlay.querySelectorAll('.toggle-password').forEach(btn => {
-            btn.addEventListener('click', function() {
-                const targetId = this.dataset.target;
+        // ========== FUNCIONALIDAD DEL OJITO CORREGIDA ==========
+        // Usamos event delegation en lugar de asignar eventos directamente
+        overlay.addEventListener('click', function(e) {
+            const btn = e.target.closest('.toggle-password');
+            if (btn) {
+                e.preventDefault();
+                const targetId = btn.getAttribute('data-target');
                 const input = document.getElementById(targetId);
-                if (input.type === 'password') {
-                    input.type = 'text';
-                    this.textContent = '🙈';
-                } else {
-                    input.type = 'password';
-                    this.textContent = '👁️';
+                if (input) {
+                    if (input.type === 'password') {
+                        input.type = 'text';
+                        btn.textContent = '🙈';
+                    } else {
+                        input.type = 'password';
+                        btn.textContent = '👁️';
+                    }
                 }
-            });
+            }
         });
         
         // Manejar envío
@@ -524,7 +529,6 @@ async showMigrationModal() {
             if (e.target === overlay) {
                 if (confirm('¿Estás seguro? Si cierras esta ventana, no podrás acceder al sistema hasta completar tus datos.')) {
                     restaurarScroll();
-                    // Redirigir al login o mostrar mensaje
                     window.location.href = '/index.html';
                 }
             }
