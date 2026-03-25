@@ -1,3 +1,4 @@
+<!-- usuarios.html -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -32,10 +33,9 @@
         <!-- Acciones -->
         <div class="actions-bar">
             <button id="createUserBtn" class="btn btn-success">➕ Crear Nuevo Usuario</button>
-            <div style="flex: 1;"></div>
-                <button id="exportUsersBtn" class="btn btn-info" style="margin-right: 10px;">
-        📥 Exportar Usuarios a CSV
-    </button>
+            <button id="exportUsersBtn" class="btn btn-info" style="margin-left: auto; margin-right: 10px;">
+                📥 Exportar Usuarios a CSV
+            </button>
             <input type="text" id="searchUser" placeholder="🔍 Buscar usuario..." class="filtro-select" style="max-width: 300px;">
             <button id="refreshUsersBtn" class="btn btn-primary">🔄 Actualizar</button>
         </div>
@@ -110,16 +110,16 @@
                 </div>
 
                 <div class="form-group">
-    <label>Área de Trabajo *</label>
-    <select id="userArea" required>
-        <option value="">Seleccione área</option>
-        <option value="Camilleros">Camilleros</option>
-        <option value="Asistentes">Asistentes</option>
-        <option value="Enfermeros">Enfermeros</option>
-        <option value="Personal general del Sanatorio">Personal general del Sanatorio</option>
-        <option value="Otros profesionales de la salud">Otros profesionales de la salud</option>
-    </select>
-</div>
+                    <label>Área de Trabajo *</label>
+                    <select id="userArea" required>
+                        <option value="">Seleccione área</option>
+                        <option value="Camilleros">Camilleros</option>
+                        <option value="Asistentes">Asistentes</option>
+                        <option value="Enfermeros">Enfermeros</option>
+                        <option value="Personal general del Sanatorio">Personal general del Sanatorio</option>
+                        <option value="Otros profesionales de la salud">Otros profesionales de la salud</option>
+                    </select>
+                </div>
                 
                 <div class="form-group">
                     <label>Rol *</label>
