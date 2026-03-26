@@ -47,6 +47,10 @@
             </div>
         </header>
 
+        <div id="carteleraContainer" class="cartelera-container-index" style="display: none;">
+            <!-- Los avisos se cargarán dinámicamente aquí -->
+        </div>
+
         <!-- Grid de clases a ancho completo -->
         <div class="classes-grid" id="dynamic-classes-grid">
             <div class="loading-classes">Cargando clases disponibles...</div>
@@ -571,7 +575,7 @@
         let htmlString = '';
         clasesVisibles.forEach(clase => {
             let fechaFormateada = 'Fecha no disponible';
-            let horaInicio = 'Hora no disponible'; // 👈 DECLARADA FUERA DEL IF
+            let horaInicio = 'Hora no disponible';
             
             if (clase.fechaClase) {
                 const fecha = new Date(clase.fechaClase);
@@ -598,7 +602,7 @@
                 <div class="class-card" onclick="abrirModalClase('${clase._id}')">
                     <h3>${clase.nombre}</h3>
                     <p>${instructoresTexto}</p>
-                    ${clase.lugar ? `<p><small class="class-lugar">📍 ${clase.lugar}</small></p>` : ''}
+                    ${clase.lugar ? `<p><small class="class-lugar"> ${clase.lugar}</small></p>` : ''}
                     <div class="class-datetime">
                         <span class="class-date">📅 ${fechaFormateada}</span>
                         <span class="class-time">⏰ ${horaInicio} hs</span>
@@ -647,7 +651,61 @@
     </script>
 
     <script>
+        // Función para cargar la cartelera en el index.html
+async function cargarCarteleraIndex() {
+    const container = document.getElementById('carteleraContainer');
+    if (!container) return;
+    
+    try {
+        const response = await fetch('/api/cartelera/activos');
+        const result = await response.json();
+        
+        if (result.success && result.data && result.data.length > 0) {
+            container.style.display = 'block';
+            
+            container.innerHTML = result.data.map(aviso => {
+                let icono = '';
+                switch(aviso.tipo) {
+                    case 'warning': icono = '⚠️'; break;
+                    case 'urgent': icono = '🔴'; break;
+                    case 'info': icono = 'ℹ️'; break;
+                }
+                
+                const fecha = new Date(aviso.fechaCreacion).toLocaleDateString('es-AR');
+                
+                return `
+                    <div class="cartelera-aviso ${aviso.tipo}">
+                        <h3>${icono} ${escapeHtml(aviso.titulo)}</h3>
+                        <p>${escapeHtml(aviso.mensaje)}</p>
+                        <div class="aviso-fecha">📅 Publicado: ${fecha}</div>
+                    </div>
+                `;
+            }).join('');
+        } else {
+            container.style.display = 'none';
+        }
+    } catch (error) {
+        console.error('Error cargando cartelera:', error);
+        container.style.display = 'none';
+    }
+}
 
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Ejecutar cuando el DOM esté listo
+document.addEventListener('DOMContentLoaded', () => {
+    cargarCarteleraIndex();
+    
+    // También cargar cuando se loguee un usuario
+    document.addEventListener('userLoggedIn', () => {
+        cargarCarteleraIndex();
+    });
+});
     </script>
 </body>
 </html>

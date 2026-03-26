@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cartelera - Panel Admin</title>
+    <link rel="stylesheet" href="/css/admin/admin.css">
+    <link rel="stylesheet" href="/css/admin/cartelera.css">
+</head>
+<body>
+    <div class="section-container">
+        <!-- Botón de crear aviso -->
+        <div class="cartelera-header">
+            <h2>📢 Cartelera de Avisos</h2>
+            <button id="crearAvisoBtn" class="btn btn-success">➕ Crear Nuevo Aviso</button>
+        </div>
+
+        <!-- Lista de avisos -->
+        <div id="avisosContainer" class="avisos-container">
+            <div class="loading-message">
+                <div class="spinner"></div>
+                Cargando avisos...
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/auth.js"></script>
+    <script src="/js/admin/admin-core.js"></script>
+    <script src="/js/admin/cartelera.js"></script>
+</body>
+</html>

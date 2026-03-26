@@ -2382,6 +2382,292 @@ app.get('/api/init-db', async (req, res) => {
     }
 });
 
+// ==================== RUTAS DE CARTELERA ====================
+
+// GET - Obtener avisos activos para mostrar en index.html
+app.get('/api/cartelera/activos', async (req, res) => {
+    try {
+        console.log('📢 GET /api/cartelera/activos');
+        const db = await mongoDB.getDatabaseSafe('formulario');
+        const ahora = new Date();
+        
+        const avisos = await db.collection('cartelera')
+            .find({
+                activo: true,
+                fechaInicio: { $lte: ahora },
+                fechaExpiracion: { $gte: ahora }
+            })
+            .sort({ prioridad: -1, fechaCreacion: -1 })
+            .toArray();
+        
+        console.log(`✅ ${avisos.length} avisos activos encontrados`);
+        
+        res.json({ 
+            success: true, 
+            data: avisos 
+        });
+    } catch (error) {
+        console.error('❌ Error obteniendo avisos activos:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Error interno del servidor' 
+        });
+    }
+});
+
+// GET - Obtener todos los avisos (para admin)
+app.get('/api/cartelera', async (req, res) => {
+    try {
+        console.log('📢 GET /api/cartelera');
+        const userHeader = req.headers['user-id'];
+        
+        if (!userHeader) {
+            return res.status(401).json({ 
+                success: false, 
+                message: 'No autenticado' 
+            });
+        }
+        
+        const db = await mongoDB.getDatabaseSafe('formulario');
+        
+        const usuario = await db.collection('usuarios').findOne({ 
+            _id: new ObjectId(userHeader) 
+        });
+        
+        if (!usuario || (usuario.role !== 'admin' && usuario.role !== 'advanced')) {
+            return res.status(403).json({ 
+                success: false, 
+                message: 'No tienes permisos para ver esta información' 
+            });
+        }
+        
+        const avisos = await db.collection('cartelera')
+            .find({})
+            .sort({ fechaCreacion: -1 })
+            .toArray();
+        
+        console.log(`✅ ${avisos.length} avisos encontrados`);
+        
+        res.json({ 
+            success: true, 
+            data: avisos 
+        });
+    } catch (error) {
+        console.error('❌ Error obteniendo avisos:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Error interno del servidor' 
+        });
+    }
+});
+
+// POST - Crear nuevo aviso
+app.post('/api/cartelera', async (req, res) => {
+    try {
+        const userHeader = req.headers['user-id'];
+        
+        console.log('📢 POST /api/cartelera - Usuario:', userHeader);
+        
+        if (!userHeader) {
+            return res.status(401).json({ 
+                success: false, 
+                message: 'No autenticado' 
+            });
+        }
+        
+        const { titulo, mensaje, tipo, fechaInicio, fechaExpiracion, prioridad } = req.body;
+        
+        // Validaciones
+        if (!titulo || !mensaje || !tipo || !fechaInicio || !fechaExpiracion) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Faltan campos requeridos: titulo, mensaje, tipo, fechaInicio, fechaExpiracion' 
+            });
+        }
+        
+        // Validar tipo
+        const tiposValidos = ['warning', 'urgent', 'info'];
+        if (!tiposValidos.includes(tipo)) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Tipo inválido. Debe ser warning, urgent o info' 
+            });
+        }
+        
+        const db = await mongoDB.getDatabaseSafe('formulario');
+        
+        const usuario = await db.collection('usuarios').findOne({ 
+            _id: new ObjectId(userHeader) 
+        });
+        
+        if (!usuario || (usuario.role !== 'admin' && usuario.role !== 'advanced')) {
+            return res.status(403).json({ 
+                success: false, 
+                message: 'No tienes permisos para crear avisos' 
+            });
+        }
+        
+        const nuevoAviso = {
+            titulo: titulo,
+            mensaje: mensaje,
+            tipo: tipo,
+            activo: true,
+            fechaInicio: new Date(fechaInicio),
+            fechaExpiracion: new Date(fechaExpiracion),
+            creadoPor: new ObjectId(userHeader),
+            fechaCreacion: new Date(),
+            prioridad: prioridad || 1
+        };
+        
+        const result = await db.collection('cartelera').insertOne(nuevoAviso);
+        
+        console.log('✅ Aviso creado:', result.insertedId);
+        
+        res.json({ 
+            success: true, 
+            message: 'Aviso creado exitosamente',
+            data: { ...nuevoAviso, _id: result.insertedId }
+        });
+        
+    } catch (error) {
+        console.error('❌ Error creando aviso:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Error interno del servidor',
+            error: error.message 
+        });
+    }
+});
+
+// PUT - Actualizar aviso
+app.put('/api/cartelera/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const userHeader = req.headers['user-id'];
+        
+        console.log(`📢 PUT /api/cartelera/${id} - Usuario:`, userHeader);
+        
+        if (!userHeader || !ObjectId.isValid(id)) {
+            return res.status(401).json({ 
+                success: false, 
+                message: 'Solicitud inválida' 
+            });
+        }
+        
+        const { titulo, mensaje, tipo, fechaInicio, fechaExpiracion, activo, prioridad } = req.body;
+        
+        const db = await mongoDB.getDatabaseSafe('formulario');
+        
+        const usuario = await db.collection('usuarios').findOne({ 
+            _id: new ObjectId(userHeader) 
+        });
+        
+        if (!usuario || (usuario.role !== 'admin' && usuario.role !== 'advanced')) {
+            return res.status(403).json({ 
+                success: false, 
+                message: 'No tienes permisos para actualizar avisos' 
+            });
+        }
+        
+        const updateData = {
+            $set: {}
+        };
+        
+        if (titulo) updateData.$set.titulo = titulo;
+        if (mensaje) updateData.$set.mensaje = mensaje;
+        if (tipo) updateData.$set.tipo = tipo;
+        if (fechaInicio) updateData.$set.fechaInicio = new Date(fechaInicio);
+        if (fechaExpiracion) updateData.$set.fechaExpiracion = new Date(fechaExpiracion);
+        if (activo !== undefined) updateData.$set.activo = activo;
+        if (prioridad !== undefined) updateData.$set.prioridad = prioridad;
+        
+        updateData.$set.fechaActualizacion = new Date();
+        
+        const result = await db.collection('cartelera').updateOne(
+            { _id: new ObjectId(id) },
+            updateData
+        );
+        
+        if (result.matchedCount === 0) {
+            return res.status(404).json({ 
+                success: false, 
+                message: 'Aviso no encontrado' 
+            });
+        }
+        
+        console.log('✅ Aviso actualizado:', id);
+        
+        res.json({ 
+            success: true, 
+            message: 'Aviso actualizado exitosamente'
+        });
+        
+    } catch (error) {
+        console.error('❌ Error actualizando aviso:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Error interno del servidor',
+            error: error.message 
+        });
+    }
+});
+
+// DELETE - Eliminar aviso
+app.delete('/api/cartelera/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const userHeader = req.headers['user-id'];
+        
+        console.log(`📢 DELETE /api/cartelera/${id} - Usuario:`, userHeader);
+        
+        if (!userHeader || !ObjectId.isValid(id)) {
+            return res.status(401).json({ 
+                success: false, 
+                message: 'Solicitud inválida' 
+            });
+        }
+        
+        const db = await mongoDB.getDatabaseSafe('formulario');
+        
+        const usuario = await db.collection('usuarios').findOne({ 
+            _id: new ObjectId(userHeader) 
+        });
+        
+        if (!usuario || (usuario.role !== 'admin' && usuario.role !== 'advanced')) {
+            return res.status(403).json({ 
+                success: false, 
+                message: 'No tienes permisos para eliminar avisos' 
+            });
+        }
+        
+        const result = await db.collection('cartelera').deleteOne({
+            _id: new ObjectId(id)
+        });
+        
+        if (result.deletedCount === 0) {
+            return res.status(404).json({ 
+                success: false, 
+                message: 'Aviso no encontrado' 
+            });
+        }
+        
+        console.log('✅ Aviso eliminado:', id);
+        
+        res.json({ 
+            success: true, 
+            message: 'Aviso eliminado exitosamente'
+        });
+        
+    } catch (error) {
+        console.error('❌ Error eliminando aviso:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Error interno del servidor',
+            error: error.message 
+        });
+    }
+});
+
 // ==================== RUTA POR DEFECTO ====================
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));

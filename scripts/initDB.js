@@ -6,18 +6,6 @@ async function initializeDatabase() {
         await connectToDatabase();
         const db = getDB('formulario');
 
-        // Clases por defecto (opcional, si necesitas clases predefinidas)
-        const clases = [
-            {
-                nombre: "Aislamientos y casos clínicos",
-                descripcion: "Lic. Romina Seminario, Lic. Mirta Díaz",
-                fechaClase: new Date('2025-12-04'),
-                fechaCierre: new Date('2025-12-04T10:00:00'),
-                activa: true,
-                instructores: ["Lic. Romina Seminario", "Lic. Mirta Díaz"]
-            }
-        ];
-
         // Solo crear clases si no existen
         for (const clase of clases) {
             const claseExistente = await db.collection('clases').findOne({ nombre: clase.nombre });
@@ -72,6 +60,20 @@ async function initializeDatabase() {
             console.log('✅ Colección "solicitudMaterial" creada con índices');
         } else {
             console.log('✅ Colección "solicitudMaterial" ya existe');
+        }
+
+        // Cartelera: Verificar/crear colección de cartelera
+        const carteleraExists = await db.listCollections({ name: 'cartelera' }).hasNext();
+        if (!carteleraExists) {
+            console.log('📝 Creando colección "cartelera"...');
+            await db.createCollection('cartelera');
+            await db.collection('cartelera').createIndex({ fechaInicio: 1 });
+            await db.collection('cartelera').createIndex({ fechaExpiracion: 1 });
+            await db.collection('cartelera').createIndex({ activo: 1 });
+            await db.collection('cartelera').createIndex({ prioridad: -1 });
+            console.log('✅ Colección "cartelera" creada con índices');
+        } else {
+            console.log('✅ Colección "cartelera" ya existe');
         }
 
         // Verificar/crear colección de clases públicas
