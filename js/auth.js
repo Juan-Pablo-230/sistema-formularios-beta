@@ -1,4 +1,4 @@
-let versionBeta = false; // Variable global para indicar que estamos en versión BETA
+let versionBeta = true; // Variable global para indicar en que version estamos, true = beta, false = estable
 
 if (versionBeta == true) {
     console.warn("Esta es una versión BETA del sistema de inscripciones. Puede contener errores o funcionalidades incompletas. Por favor, utilícelo con precaución y reporte cualquier problema al desarrollador.");
