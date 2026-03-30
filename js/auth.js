@@ -1,4 +1,4 @@
-let versionBeta = true; // Variable global para indicar que estamos en versión BETA
+let versionBeta = false; // Variable global para indicar que estamos en versión BETA
 
 if (versionBeta == true) {
     console.warn("Esta es una versión BETA del sistema de inscripciones. Puede contener errores o funcionalidades incompletas. Por favor, utilícelo con precaución y reporte cualquier problema al desarrollador.");
@@ -18,7 +18,8 @@ if (versionBeta == true) {
     }
     const footer = document.querySelector('footer');
     if (footer) {
-        footer.innerHTML = '<a href="https://sistema-formularios-production.up.railway.app/" style="color: #667eea; text-decoration: none;">Ir a la versión estable del sistema.</a>';
+        footer.innerHTML = '<a href="https://sistema-formularios-production.up.railway.app/" style="color: #667eea; text-decoration: none;">Ir a la versión estable del sistema.</a>' + '<br>' + '<span style="color: #ff6b6b; font-weight: bold;">Versión:</span> 2.0-BETA';
+        
     }
 }
 else {
@@ -38,7 +39,7 @@ else {
     }
     const footer = document.querySelector('footer');
     if (footer) {
-        footer.innerHTML = '<a href="https://sistema-formularios-beta-production.up.railway.app/" style="color: #667eea; text-decoration: none;">Ir a la versión BETA del sistema.</a>';
+        footer.innerHTML = '<a href="https://sistema-formularios-beta-production.up.railway.app/" style="color: #667eea; text-decoration: none;">Ir a la versión BETA del sistema.</a>' + '<br>' + '<span style="color: #2d5a5a; font-weight: bold;">Versión:</span> 2.0';
     }
 }
 
