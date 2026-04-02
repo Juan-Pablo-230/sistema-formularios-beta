@@ -852,7 +852,7 @@ class AuthSystem {
                                     <option value="Turno noche A">Turno noche A</option>
                                     <option value="Turno noche B">Turno noche B</option>
                                     <option value="Turno intermedio">Turno intermedio</option>
-                                    <option value="Sábado, Domingo y feriado">Sábado, Domingo y feriado</option>
+                                    <option value="Turno SADOFE">Sábado, Domingo y feriado</option>
                                 </select>
                             </div>
                             

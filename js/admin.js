@@ -224,7 +224,7 @@ class AdminSystem {
             'Turno noche A': { bg: '#e8eaf6', color: '#283593', icon: '🌙' },
             'Turno noche B': { bg: '#e8eaf6', color: '#1a237e', icon: '🌙' },
             'Turno intermedio': { bg: '#f3e5f5', color: '#6a1b9a', icon: '⏰' },
-            'Sábado, Domingo y feriado': { bg: '#ffebee', color: '#b71c1c', icon: '📅' }
+            'Turno SADOFE': { bg: '#ffebee', color: '#b71c1c', icon: '📅' }
         };
         
         const estilo = coloresTurno[turno] || { bg: '#f5f5f5', color: '#616161', icon: '👤' };
@@ -1166,7 +1166,7 @@ class AdminSystem {
                                 <option value="Turno noche A">Turno noche A</option>
                                 <option value="Turno noche B">Turno noche B</option>
                                 <option value="Turno intermedio">Turno intermedio</option>
-                                <option value="Sábado, Domingo y feriado">Sábado, Domingo y feriado</option>
+                                <option value="Turno SADOFE">Sábado, Domingo y feriado</option>
                             </select>
                         </div>
                         <div class="form-group">
@@ -1281,7 +1281,7 @@ class AdminSystem {
                                 <option value="Turno noche A" ${usuario.turno === 'Turno noche A' ? 'selected' : ''}>Turno noche A</option>
                                 <option value="Turno noche B" ${usuario.turno === 'Turno noche B' ? 'selected' : ''}>Turno noche B</option>
                                 <option value="Turno intermedio" ${usuario.turno === 'Turno intermedio' ? 'selected' : ''}>Turno intermedio</option>
-                                <option value="Sábado, Domingo y feriado" ${usuario.turno === 'Sábado, Domingo y feriado' ? 'selected' : ''}>Sábado, Domingo y feriado</option>
+                                <option value="Turno SADOFE" ${usuario.turno === 'Turno SADOFE' ? 'selected' : ''}>Sábado, Domingo y feriado</option>
                             </select>
                         </div>
                         <div class="form-actions">

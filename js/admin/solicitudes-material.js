@@ -126,7 +126,7 @@ class SolicitudesMaterialManager {
             'Turno noche A': 'noche',
             'Turno noche B': 'noche',
             'Turno intermedio': 'intermedio',
-            'Sábado, Domingo y feriado': 'finde'
+            'Turno SADOFE': 'finde'
         };
         
         const clase = clases[turno] || 'default';
