@@ -38,6 +38,51 @@ class CarteleraManager {
         }
     }
 
+    // NUEVO: Función para convertir URLs en enlaces clickeables
+    convertirUrlsEnEnlaces(texto) {
+        if (!texto) return '';
+        
+        // Regex para detectar URLs (http, https, www)
+        const urlRegex = /(https?:\/\/[^\s]+|www\.[^\s]+)/gi;
+        
+        return texto.replace(urlRegex, (url) => {
+            let href = url;
+            if (!href.startsWith('http')) {
+                href = 'https://' + href;
+            }
+            return `<a href="${href}" target="_blank" rel="noopener noreferrer" style="color: #4285f4; text-decoration: underline;">${url}</a>`;
+        });
+    }
+
+    // NUEVO: Escapar HTML pero preservar los enlaces ya convertidos
+    escapeHtmlPreservingLinks(texto) {
+        if (!texto) return '';
+        
+        // Primero escapar todo el texto
+        const div = document.createElement('div');
+        div.textContent = texto;
+        let escapado = div.innerHTML;
+        
+        // Luego convertir URLs a enlaces
+        const urlRegex = /(https?:\/\/[^\s<]+|www\.[^\s<]+)/gi;
+        escapado = escapado.replace(urlRegex, (url) => {
+            let href = url;
+            if (!href.startsWith('http')) {
+                href = 'https://' + href;
+            }
+            return `<a href="${href}" target="_blank" rel="noopener noreferrer" style="color: #4285f4; text-decoration: underline;">${url}</a>`;
+        });
+        
+        return escapado;
+    }
+
+    escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
     mostrarAvisos() {
         const container = document.getElementById('avisosContainer');
         if (!container) return;
@@ -108,11 +153,17 @@ class CarteleraManager {
                     prioridadTexto = 'Baja';
             }
             
+            // ESCAPAR el título (sin enlaces)
+            const tituloEscapado = this.escapeHtml(aviso.titulo);
+            
+            // PARA EL MENSAJE: convertir URLs a enlaces clickeables
+            const mensajeConEnlaces = this.convertirUrlsEnEnlaces(aviso.mensaje);
+            
             return `
                 <div class="aviso-card ${aviso.tipo} ${!estaActivo ? 'inactive' : ''}" data-id="${aviso._id}">
                     <div class="aviso-header">
                         <div class="aviso-titulo">
-                            <span>${tipoIcono} ${this.escapeHtml(aviso.titulo)}</span>
+                            <span>${tipoIcono} ${tituloEscapado}</span>
                             <span class="aviso-prioridad ${prioridadClase}">⚡ ${prioridadTexto}</span>
                             <span class="aviso-estado ${estaActivo ? 'activo' : 'inactivo'}">
                                 ${estaActivo ? '● Activo' : '○ Inactivo'}
@@ -123,7 +174,7 @@ class CarteleraManager {
                             <span>🔚 Expira: ${fechaExpiracionStr}</span>
                         </div>
                     </div>
-                    <div class="aviso-mensaje">${this.escapeHtml(aviso.mensaje)}</div>
+                    <div class="aviso-mensaje">${mensajeConEnlaces}</div>
                     <div class="aviso-acciones">
                         <button class="btn-small btn-edit" onclick="window.carteleraManager.editarAviso('${aviso._id}')">✏️ Editar</button>
                         <button class="btn-small btn-danger" onclick="window.carteleraManager.eliminarAviso('${aviso._id}')">🗑️ Eliminar</button>
@@ -131,13 +182,6 @@ class CarteleraManager {
                 </div>
             `;
         }).join('');
-    }
-
-    escapeHtml(text) {
-        if (!text) return '';
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
     }
 
     async crearAviso() {
@@ -160,7 +204,8 @@ class CarteleraManager {
                         
                         <div class="form-group">
                             <label>Mensaje <span class="required">*</span></label>
-                            <textarea id="avisoMensaje" rows="3" required maxlength="500" placeholder="Escribe el contenido del aviso..."></textarea>
+                            <textarea id="avisoMensaje" rows="3" required maxlength="500" placeholder="Escribe el contenido del aviso... Puedes incluir enlaces como https://ejemplo.com"></textarea>
+                            <small class="field-info">Los enlaces (http://, https://, www.) se mostrarán automáticamente como enlaces clickeables</small>
                         </div>
                         
                         <div class="form-group">
@@ -249,6 +294,7 @@ class CarteleraManager {
                         <div class="form-group">
                             <label>Mensaje <span class="required">*</span></label>
                             <textarea id="avisoMensaje" rows="3" required maxlength="500">${this.escapeHtml(aviso.mensaje)}</textarea>
+                            <small class="field-info">Los enlaces (http://, https://, www.) se mostrarán automáticamente como enlaces clickeables</small>
                         </div>
                         
                         <div class="form-group">
