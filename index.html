@@ -783,34 +783,5 @@
         });
     });
 </script>
-
-<script>
-// FORZAR la población del select en el modal de perfil
-(function() {
-    // Esperar a que todo esté listo
-    setTimeout(function() {
-        if (window.profileUpdater) {
-            const originalShowUpdateModal = window.profileUpdater.showUpdateModal;
-            
-            window.profileUpdater.showUpdateModal = function() {
-                // Llamar a la función original
-                originalShowUpdateModal.call(window.profileUpdater);
-                
-                // Forzar la población del select después de que el modal se abra
-                setTimeout(function() {
-                    const select = document.getElementById('updateArea');
-                    const user = authSystem.getCurrentUser();
-                    if (select && window.poblarSelectAreas) {
-                        window.poblarSelectAreas(select, user?.area || '');
-                        console.log('✅ Select de áreas poblado correctamente');
-                    }
-                }, 100);
-            };
-            
-            console.log('✅ Modal de perfil interceptado correctamente');
-        }
-    }, 500);
-})();
-</script>
 </body>
 </html>
