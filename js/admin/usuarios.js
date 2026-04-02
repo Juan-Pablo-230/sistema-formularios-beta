@@ -120,7 +120,6 @@ class UsuariosManager {
         tbody.innerHTML = usuariosFiltrados.map((usuario, index) => {
             const totalActividades = this.contarActividadesUsuario(usuario._id);
             
-            // Formatear fecha de registro en 24 horas
             const fechaRegistro = usuario.fechaRegistro ? 
                 new Date(usuario.fechaRegistro).toLocaleString('es-AR', {
                     day: '2-digit',
@@ -215,8 +214,6 @@ class UsuariosManager {
         }
     }
 
-    // ===== MÉTODOS DEL MODAL =====
-    
     abrirModal(usuario = null) {
         const modal = document.getElementById('userModal');
         const title = document.getElementById('modalTitle');
@@ -238,12 +235,29 @@ class UsuariosManager {
             document.getElementById('userLegajo').value = usuario.legajo || '';
             document.getElementById('userEmail').value = usuario.email || '';
             document.getElementById('userTurno').value = usuario.turno || '';
-            document.getElementById('userArea').value = usuario.area || '';
             document.getElementById('userRole').value = usuario.role || 'user';
             
             document.getElementById('userPassword').required = false;
             document.getElementById('userPassword').placeholder = 'Dejar en blanco para mantener (máx 15)';
             if (passwordGroup) passwordGroup.style.display = 'block';
+            
+            // POBLAR SELECT DE ÁREAS con el valor del usuario
+            const userAreaSelect = document.getElementById('userArea');
+            if (userAreaSelect && window.parent && window.parent.areaData) {
+                window.parent.areaData.poblarSelectAreas(userAreaSelect, usuario.area || '');
+            } else if (window.areaData) {
+                window.areaData.poblarSelectAreas(userAreaSelect, usuario.area || '');
+            } else {
+                // Fallback: esperar
+                const checkInterval = setInterval(() => {
+                    if (window.areaData || (window.parent && window.parent.areaData)) {
+                        clearInterval(checkInterval);
+                        const areaData = window.areaData || window.parent.areaData;
+                        areaData.poblarSelectAreas(userAreaSelect, usuario.area || '');
+                    }
+                }, 100);
+                setTimeout(() => clearInterval(checkInterval), 5000);
+            }
             
             console.log('✏️ Editando usuario:', usuario.apellidoNombre);
         } else {
@@ -253,6 +267,23 @@ class UsuariosManager {
             document.getElementById('userPassword').required = true;
             document.getElementById('userPassword').placeholder = 'Mínimo 8, máximo 15 caracteres';
             if (passwordGroup) passwordGroup.style.display = 'block';
+            
+            // POBLAR SELECT DE ÁREAS vacío
+            const userAreaSelect = document.getElementById('userArea');
+            if (userAreaSelect && window.parent && window.parent.areaData) {
+                window.parent.areaData.poblarSelectAreas(userAreaSelect, '');
+            } else if (window.areaData) {
+                window.areaData.poblarSelectAreas(userAreaSelect, '');
+            } else {
+                const checkInterval = setInterval(() => {
+                    if (window.areaData || (window.parent && window.parent.areaData)) {
+                        clearInterval(checkInterval);
+                        const areaData = window.areaData || window.parent.areaData;
+                        areaData.poblarSelectAreas(userAreaSelect, '');
+                    }
+                }, 100);
+                setTimeout(() => clearInterval(checkInterval), 5000);
+            }
         }
         
         modal.style.display = 'flex';
@@ -453,7 +484,6 @@ class UsuariosManager {
             }))
         ].sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
 
-        // Opciones de formato de fecha en 24 horas
         const opcionesFecha = {
             day: '2-digit',
             month: '2-digit',
@@ -506,7 +536,7 @@ class UsuariosManager {
                                             </div>
                                         ` : act.tipo === 'inscripcion' ? 'Inscripción a clase' : 'Sin detalles'}
                                     </td>
-                                </tr>
+                                 </tr>
                             `}).join('')}
                         </tbody>
                     </table>
@@ -582,7 +612,6 @@ class UsuariosManager {
                 'Fecha Registro'
             ];
 
-            // Opciones de formato de fecha en 24 horas
             const opcionesFecha = {
                 day: '2-digit',
                 month: '2-digit',

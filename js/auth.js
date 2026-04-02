@@ -64,7 +64,7 @@ class AuthSystem {
             // Verificar si necesita migración al cargar la página
             setTimeout(() => {
                 this.checkMigrationNeeded();
-            }, 500); // Pequeño delay para asegurar que el DOM esté listo
+            }, 500);
         } else {
             console.log('No hay usuario en localStorage');
         }
@@ -72,27 +72,15 @@ class AuthSystem {
 
     // Verificar si necesita migración
     async checkMigrationNeeded() {
-        // Si ya hay un modal activo, no hacer nada
         if (this.migrationModalActive) return;
-        
-        // Si no hay usuario logueado, no hacer nada
         if (!this.isLoggedIn()) return;
         
         const user = this.currentUser;
-        
-        // Verificar si necesita migración (needsPasswordChange true Y no ha actualizado)
         const needsMigration = user.needsMigration === true;
-        
-        // Verificar si le falta el área
         const needsArea = !user.area || user.area === '';
         
-        console.log('🔍 Verificando necesidad de migración:', {
-            needsMigration,
-            needsArea,
-            area: user.area
-        });
+        console.log('🔍 Verificando necesidad de migración:', { needsMigration, needsArea, area: user.area });
         
-        // Si necesita migración O le falta el área, mostrar modal
         if (needsMigration || needsArea) {
             console.log('⚠️ Usuario necesita completar datos, mostrando modal...');
             await this.showMigrationModal();
@@ -196,7 +184,6 @@ class AuthSystem {
                 area: this.currentUser.area
             });
             
-            // Verificar si necesita migración después del login
             setTimeout(() => {
                 this.checkMigrationNeeded();
             }, 500);
@@ -209,404 +196,373 @@ class AuthSystem {
         }
     }
 
-    // Muestra el modal obligatorio de migración (para texto plano y área faltante)
-async showMigrationModal() {
-    // Verificar si ya hay un modal activo
-    if (this.migrationModalActive) {
-        console.log('⚠️ Ya hay un modal de migración activo');
-        return Promise.reject('Modal ya activo');
-    }
-    
-    // Marcar que hay un modal activo
-    this.migrationModalActive = true;
+    async showMigrationModal() {
+        if (this.migrationModalActive) {
+            console.log('⚠️ Ya hay un modal de migración activo');
+            return Promise.reject('Modal ya activo');
+        }
+        
+        this.migrationModalActive = true;
 
-    return new Promise((resolve, reject) => {
-        const user = this.currentUser;
-        // Verificar si necesita migración de contraseña (texto plano)
-        const needsMigration = user.needsMigration === true;
-        
-        console.log('📋 Mostrando modal de migración. needsMigration:', needsMigration);
-        
-        // BLOQUEAR SCROLL DEL FONDO
-        document.body.style.overflow = 'hidden';
-        
-        // Crear overlay
-        const overlay = document.createElement('div');
-        overlay.className = 'migration-overlay';
-        overlay.style.cssText = `
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.9);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 20000;
-            font-family: 'Arial', sans-serif;
-            backdrop-filter: blur(5px);
-        `;
-        
-        // Construir el HTML del modal
-        let modalHTML = `
-            <div class="migration-container" style="
-                background: #1e1e2e;
-                padding: 30px;
-                border-radius: 15px;
-                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-                width: 90%;
-                max-width: 500px;
-                color: #e0e0e0;
-                max-height: 90vh;
-                overflow-y: auto;
-            ">
-                <h2 style="text-align: center; margin-bottom: 20px; color: #fff;">Acciones Requeridas</h2>
-                <p style="text-align: center; margin-bottom: 20px;">
-                    Para reforsar la seguridad de tu cuenta, te pedimos que completes los siguientes pasos de tu perfil. Es obligatorio completar tu área de trabajo y configurar una nueva contraseña. Si no completas esta información, no podrás acceder al sistema. ¡Gracias por tu comprensión!:
-                </p>
-        `;
-        
-        // CAMPO ÁREA - SIEMPRE VISIBLE
-        modalHTML += `
-            <div style="margin-bottom: 25px; padding: 15px; background: #2a2f36; border-radius: 10px;">
-                <h3 style="margin-bottom: 15px; color: #4285f4;">🏥 Área de Trabajo</h3>
-                <p>Por favor, selecciona tu área de trabajo para completar tu perfil:</p>
-                
-                <div class="form-group" style="margin-bottom: 15px;">
-                    <label style="display: block; margin-bottom: 5px;">Área de Trabajo *</label>
-                    <select id="migrationArea" required style="
-                        width: 100%;
-                        padding: 10px;
-                        border: 2px solid #3d3d5c;
-                        border-radius: 8px;
-                        background: #1e1e2e;
-                        color: #e0e0e0;
-                        font-size: 14px;
-                    ">
-                        <option value="">Seleccione su área</option>
-                        <option value="Camilleros">Camilleros</option>
-                        <option value="Asistentes">Asistentes</option>
-                        <option value="Enfermeros">Enfermeros</option>
-                        <option value="Personal general del Sanatorio">Personal general del Sanatorio</option>
-                        <option value="Otros profesionales de la salud">Otros profesionales de la salud</option>
-                    </select>
-                </div>
-            </div>
-        `;
-        
-        // Agregar sección de cambio de contraseña SOLO si es necesario (texto plano)
-        if (needsMigration) {
+        return new Promise((resolve, reject) => {
+            const user = this.currentUser;
+            const needsMigration = user.needsMigration === true;
+            
+            console.log('📋 Mostrando modal de migración. needsMigration:', needsMigration);
+            
+            document.body.style.overflow = 'hidden';
+            
+            const overlay = document.createElement('div');
+            overlay.className = 'migration-overlay';
+            overlay.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.9);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 20000;
+                font-family: 'Arial', sans-serif;
+                backdrop-filter: blur(5px);
+            `;
+            
+            let modalHTML = `
+                <div class="migration-container" style="
+                    background: #1e1e2e;
+                    padding: 30px;
+                    border-radius: 15px;
+                    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+                    width: 90%;
+                    max-width: 500px;
+                    color: #e0e0e0;
+                    max-height: 90vh;
+                    overflow-y: auto;
+                ">
+                    <h2 style="text-align: center; margin-bottom: 20px; color: #fff;">Acciones Requeridas</h2>
+                    <p style="text-align: center; margin-bottom: 20px;">
+                        Para reforsar la seguridad de tu cuenta, te pedimos que completes los siguientes pasos de tu perfil. Es obligatorio completar tu área de trabajo y configurar una nueva contraseña. Si no completas esta información, no podrás acceder al sistema. ¡Gracias por tu comprensión!:
+                    </p>
+            `;
+            
             modalHTML += `
                 <div style="margin-bottom: 25px; padding: 15px; background: #2a2f36; border-radius: 10px;">
-                    <h3 style="margin-bottom: 15px; color: #ff6b6b;">🔐 Configuración de Contraseña</h3>
-                    <p>Por seguridad, debes configurar tu contraseña con nuestro nuevo sistema de encriptación.</p>
+                    <h3 style="margin-bottom: 15px; color: #4285f4;">🏥 Área de Trabajo</h3>
+                    <p>Por favor, selecciona tu área de trabajo para completar tu perfil:</p>
                     
                     <div class="form-group" style="margin-bottom: 15px;">
-                        <label style="display: block; margin-bottom: 5px;">Contraseña Actual *</label>
-                        <div style="position: relative;">
-                            <input type="password" id="currentPassword" required style="
-                                width: 100%;
-                                padding: 10px;
-                                padding-right: 45px;
-                                border: 2px solid #3d3d5c;
-                                border-radius: 8px;
-                                background: #1e1e2e;
-                                color: #e0e0e0;
-                            ">
-                            <button type="button" class="toggle-password" data-target="currentPassword" style="
-                                position: absolute;
-                                right: 10px;
-                                top: 50%;
-                                transform: translateY(-50%);
-                                background: none;
-                                border: none;
-                                cursor: pointer;
-                                color: #b0b0b0;
-                                font-size: 14px;
-                                z-index: 10;
-                            ">👁️</button>
-                        </div>
-                    </div>
-                    
-                    <div class="form-group" style="margin-bottom: 15px;">
-                        <label style="display: block; margin-bottom: 5px;">Nueva Contraseña *</label>
-                        <div style="position: relative;">
-                            <input type="password" id="newPassword" required maxlength="15" style="
-                                width: 100%;
-                                padding: 10px;
-                                padding-right: 45px;
-                                border: 2px solid #3d3d5c;
-                                border-radius: 8px;
-                                background: #1e1e2e;
-                                color: #e0e0e0;
-                            ">
-                            <button type="button" class="toggle-password" data-target="newPassword" style="
-                                position: absolute;
-                                right: 10px;
-                                top: 50%;
-                                transform: translateY(-50%);
-                                background: none;
-                                border: none;
-                                cursor: pointer;
-                                color: #b0b0b0;
-                                font-size: 14px;
-                                z-index: 10;
-                            ">👁️</button>
-                        </div>
-                        <small style="color: #b0b0b0;">Mínimo 8, máximo 15 caracteres</small>
-                    </div>
-                    
-                    <div class="form-group" style="margin-bottom: 15px;">
-                        <label style="display: block; margin-bottom: 5px;">Confirmar Nueva Contraseña *</label>
-                        <div style="position: relative;">
-                            <input type="password" id="confirmNewPassword" required maxlength="15" style="
-                                width: 100%;
-                                padding: 10px;
-                                padding-right: 45px;
-                                border: 2px solid #3d3d5c;
-                                border-radius: 8px;
-                                background: #1e1e2e;
-                                color: #e0e0e0;
-                            ">
-                            <button type="button" class="toggle-password" data-target="confirmNewPassword" style="
-                                position: absolute;
-                                right: 10px;
-                                top: 50%;
-                                transform: translateY(-50%);
-                                background: none;
-                                border: none;
-                                cursor: pointer;
-                                color: #b0b0b0;
-                                font-size: 14px;
-                                z-index: 10;
-                            ">👁️</button>
-                        </div>
+                        <label style="display: block; margin-bottom: 5px;">Área de Trabajo *</label>
+                        <select id="migrationArea" required style="
+                            width: 100%;
+                            padding: 10px;
+                            border: 2px solid #3d3d5c;
+                            border-radius: 8px;
+                            background: #1e1e2e;
+                            color: #e0e0e0;
+                            font-size: 14px;
+                        ">
+                            <option value="">Seleccione su área</option>
+                        </select>
                     </div>
                 </div>
             `;
-        }
-        
-        // Cerrar el modal
-        modalHTML += `
-                <div id="migrationMessage" style="
-                    display: none;
-                    padding: 12px;
-                    border-radius: 5px;
-                    margin-bottom: 15px;
-                    text-align: center;
-                    font-weight: bold;
-                "></div>
-                
-                <button id="migrateBtn" style="
-                    width: 100%;
-                    background: linear-gradient(135deg, #34a853 0%, #0f9d58 100%);
-                    color: white;
-                    padding: 15px;
-                    border: none;
-                    border-radius: 8px;
-                    font-size: 16px;
-                    font-weight: bold;
-                    cursor: pointer;
-                    transition: transform 0.2s;
-                ">Continuar</button>
-            </div>
-        `;
-        
-        overlay.innerHTML = modalHTML;
-        document.body.appendChild(overlay);
-        
-        // Función para restaurar scroll y limpiar estado
-        const restaurarScroll = () => {
-            document.body.style.overflow = '';
-            this.migrationModalActive = false;
-            if (overlay.parentNode) {
-                overlay.remove();
-            }
-        };
-        
-        // ========== FUNCIONALIDAD DEL OJITO (VERSIÓN DEFINITIVA) ==========
-setTimeout(() => {
-    const toggleButtons = overlay.querySelectorAll('.toggle-password');
-    console.log('🔍 Botones toggle encontrados:', toggleButtons.length);
-    
-    toggleButtons.forEach(btn => {
-        const newBtn = btn.cloneNode(true);
-        btn.parentNode.replaceChild(newBtn, btn);
-        
-        newBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
             
-            const targetId = this.getAttribute('data-target');
-            const originalInput = document.getElementById(targetId);
-            
-            if (!originalInput) return;
-            
-            const parentDiv = originalInput.parentNode;
-            const currentValue = originalInput.value;
-            
-            // Verificar si ya existe un campo visible alternativo
-            const existingTextInput = parentDiv.querySelector('.temp-text-input');
-            
-            if (originalInput.type === 'password' && !existingTextInput) {
-                // Crear un input de texto temporal
-                const textInput = document.createElement('input');
-                textInput.type = 'text';
-                textInput.className = 'temp-text-input';
-                textInput.value = currentValue;
-                textInput.style.cssText = originalInput.style.cssText;
-                textInput.style.position = 'absolute';
-                textInput.style.left = '0';
-                textInput.style.top = '0';
-                textInput.style.width = '100%';
-                textInput.style.height = '100%';
-                textInput.style.padding = originalInput.style.padding;
-                textInput.style.border = originalInput.style.border;
-                textInput.style.background = originalInput.style.background;
-                textInput.style.color = originalInput.style.color;
-                
-                // Ocultar el input original
-                originalInput.style.opacity = '0';
-                originalInput.style.position = 'relative';
-                originalInput.style.zIndex = '0';
-                
-                // Posicionar el contenedor relativamente
-                parentDiv.style.position = 'relative';
-                
-                // Agregar el input de texto encima
-                parentDiv.appendChild(textInput);
-                
-                // Sincronizar valores cuando se escribe en el texto
-                textInput.addEventListener('input', function() {
-                    originalInput.value = this.value;
-                });
-                
-                // Sincronizar si se escribe en el original (por si acaso)
-                originalInput.addEventListener('input', function() {
-                    if (textInput) textInput.value = this.value;
-                });
-                
-                this.textContent = '🙈';
-                console.log('👁️ Contraseña visible para:', targetId);
-                
-            } else if (existingTextInput) {
-                // Eliminar el input temporal y restaurar el original
-                existingTextInput.remove();
-                originalInput.style.opacity = '1';
-                originalInput.style.position = '';
-                this.textContent = '👁️';
-                console.log('👁️ Contraseña oculta para:', targetId);
-            }
-        });
-    });
-}, 100);
-        
-        // Manejar envío
-        const migrateBtn = overlay.querySelector('#migrateBtn');
-        
-        migrateBtn.addEventListener('click', async () => {
-            
-            // Preparar datos base
-            const data = {};
-            
-            // Validar área SIEMPRE
-            const area = overlay.querySelector('#migrationArea')?.value;
-            if (!area) {
-                this.showMigrationMessage(overlay, '❌ Debes seleccionar tu área de trabajo', 'error');
-                return;
-            }
-            data.area = area;
-            
-            // Validar y obtener valores SOLO si se requiere migración de contraseña
             if (needsMigration) {
-                const currentPassword = overlay.querySelector('#currentPassword')?.value;
-                const newPassword = overlay.querySelector('#newPassword')?.value;
-                const confirmPassword = overlay.querySelector('#confirmNewPassword')?.value;
-                
-                // Validaciones
-                if (!currentPassword) {
-                    this.showMigrationMessage(overlay, 'Debes ingresar tu contraseña actual', 'error');
-                    return;
-                }
-                
-                if (!newPassword) {
-                    this.showMigrationMessage(overlay, 'Debes ingresar una nueva contraseña', 'error');
-                    return;
-                }
-                
-                if (!confirmPassword) {
-                    this.showMigrationMessage(overlay, 'Debes confirmar la nueva contraseña', 'error');
-                    return;
-                }
-                
-                if (newPassword.length < 8) {
-                    this.showMigrationMessage(overlay, 'La nueva contraseña debe tener al menos 8 caracteres', 'error');
-                    return;
-                }
-                
-                if (newPassword.length > 15) {
-                    this.showMigrationMessage(overlay, 'La nueva contraseña no puede tener más de 15 caracteres', 'error');
-                    return;
-                }
-                
-                if (newPassword !== confirmPassword) {
-                    this.showMigrationMessage(overlay, 'Las contraseñas nuevas no coinciden', 'error');
-                    return;
-                }
-                
-                // Asignar valores al objeto data
-                data.currentPassword = currentPassword;
-                data.newPassword = newPassword;
+                modalHTML += `
+                    <div style="margin-bottom: 25px; padding: 15px; background: #2a2f36; border-radius: 10px;">
+                        <h3 style="margin-bottom: 15px; color: #ff6b6b;">🔐 Configuración de Contraseña</h3>
+                        <p>Por seguridad, debes configurar tu contraseña con nuestro nuevo sistema de encriptación.</p>
+                        
+                        <div class="form-group" style="margin-bottom: 15px;">
+                            <label style="display: block; margin-bottom: 5px;">Contraseña Actual *</label>
+                            <div style="position: relative;">
+                                <input type="password" id="currentPassword" required style="
+                                    width: 100%;
+                                    padding: 10px;
+                                    padding-right: 45px;
+                                    border: 2px solid #3d3d5c;
+                                    border-radius: 8px;
+                                    background: #1e1e2e;
+                                    color: #e0e0e0;
+                                ">
+                                <button type="button" class="toggle-password" data-target="currentPassword" style="
+                                    position: absolute;
+                                    right: 10px;
+                                    top: 50%;
+                                    transform: translateY(-50%);
+                                    background: none;
+                                    border: none;
+                                    cursor: pointer;
+                                    color: #b0b0b0;
+                                    font-size: 14px;
+                                    z-index: 10;
+                                ">👁️</button>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group" style="margin-bottom: 15px;">
+                            <label style="display: block; margin-bottom: 5px;">Nueva Contraseña *</label>
+                            <div style="position: relative;">
+                                <input type="password" id="newPassword" required maxlength="15" style="
+                                    width: 100%;
+                                    padding: 10px;
+                                    padding-right: 45px;
+                                    border: 2px solid #3d3d5c;
+                                    border-radius: 8px;
+                                    background: #1e1e2e;
+                                    color: #e0e0e0;
+                                ">
+                                <button type="button" class="toggle-password" data-target="newPassword" style="
+                                    position: absolute;
+                                    right: 10px;
+                                    top: 50%;
+                                    transform: translateY(-50%);
+                                    background: none;
+                                    border: none;
+                                    cursor: pointer;
+                                    color: #b0b0b0;
+                                    font-size: 14px;
+                                    z-index: 10;
+                                ">👁️</button>
+                            </div>
+                            <small style="color: #b0b0b0;">Mínimo 8, máximo 15 caracteres</small>
+                        </div>
+                        
+                        <div class="form-group" style="margin-bottom: 15px;">
+                            <label style="display: block; margin-bottom: 5px;">Confirmar Nueva Contraseña *</label>
+                            <div style="position: relative;">
+                                <input type="password" id="confirmNewPassword" required maxlength="15" style="
+                                    width: 100%;
+                                    padding: 10px;
+                                    padding-right: 45px;
+                                    border: 2px solid #3d3d5c;
+                                    border-radius: 8px;
+                                    background: #1e1e2e;
+                                    color: #e0e0e0;
+                                ">
+                                <button type="button" class="toggle-password" data-target="confirmNewPassword" style="
+                                    position: absolute;
+                                    right: 10px;
+                                    top: 50%;
+                                    transform: translateY(-50%);
+                                    background: none;
+                                    border: none;
+                                    cursor: pointer;
+                                    color: #b0b0b0;
+                                    font-size: 14px;
+                                    z-index: 10;
+                                ">👁️</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
             }
             
-            try {
-                migrateBtn.disabled = true;
-                migrateBtn.textContent = 'Procesando...';
-                
-                const result = await this.makeRequest('/usuarios/migrar', data);
-                
-                if (result.success) {
-                    // Actualizar usuario en localStorage
-                    this.currentUser = result.data;
-                    localStorage.setItem('currentUser', JSON.stringify(this.currentUser));
+            modalHTML += `
+                    <div id="migrationMessage" style="
+                        display: none;
+                        padding: 12px;
+                        border-radius: 5px;
+                        margin-bottom: 15px;
+                        text-align: center;
+                        font-weight: bold;
+                    "></div>
                     
-                    this.showMigrationMessage(overlay, '✅ Datos actualizados correctamente. Recargando...', 'success');
+                    <button id="migrateBtn" style="
+                        width: 100%;
+                        background: linear-gradient(135deg, #34a853 0%, #0f9d58 100%);
+                        color: white;
+                        padding: 15px;
+                        border: none;
+                        border-radius: 8px;
+                        font-size: 16px;
+                        font-weight: bold;
+                        cursor: pointer;
+                        transition: transform 0.2s;
+                    ">Continuar</button>
+                </div>
+            `;
+            
+            overlay.innerHTML = modalHTML;
+            document.body.appendChild(overlay);
+            
+            // POBLAR EL SELECT DE ÁREAS usando areaData
+            const migrationAreaSelect = overlay.querySelector('#migrationArea');
+            if (migrationAreaSelect && window.areaData) {
+                window.areaData.poblarSelectAreas(migrationAreaSelect, '');
+            } else {
+                // Fallback: esperar a que areaData esté disponible
+                const checkInterval = setInterval(() => {
+                    if (window.areaData) {
+                        clearInterval(checkInterval);
+                        window.areaData.poblarSelectAreas(migrationAreaSelect, '');
+                    }
+                }, 100);
+                setTimeout(() => clearInterval(checkInterval), 5000);
+            }
+            
+            const restaurarScroll = () => {
+                document.body.style.overflow = '';
+                this.migrationModalActive = false;
+                if (overlay.parentNode) {
+                    overlay.remove();
+                }
+            };
+            
+            setTimeout(() => {
+                const toggleButtons = overlay.querySelectorAll('.toggle-password');
+                console.log('🔍 Botones toggle encontrados:', toggleButtons.length);
+                
+                toggleButtons.forEach(btn => {
+                    const newBtn = btn.cloneNode(true);
+                    btn.parentNode.replaceChild(newBtn, btn);
                     
-                    setTimeout(() => {
+                    newBtn.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        
+                        const targetId = this.getAttribute('data-target');
+                        const originalInput = document.getElementById(targetId);
+                        
+                        if (!originalInput) return;
+                        
+                        const parentDiv = originalInput.parentNode;
+                        const currentValue = originalInput.value;
+                        const existingTextInput = parentDiv.querySelector('.temp-text-input');
+                        
+                        if (originalInput.type === 'password' && !existingTextInput) {
+                            const textInput = document.createElement('input');
+                            textInput.type = 'text';
+                            textInput.className = 'temp-text-input';
+                            textInput.value = currentValue;
+                            textInput.style.cssText = originalInput.style.cssText;
+                            textInput.style.position = 'absolute';
+                            textInput.style.left = '0';
+                            textInput.style.top = '0';
+                            textInput.style.width = '100%';
+                            textInput.style.height = '100%';
+                            textInput.style.padding = originalInput.style.padding;
+                            textInput.style.border = originalInput.style.border;
+                            textInput.style.background = originalInput.style.background;
+                            textInput.style.color = originalInput.style.color;
+                            
+                            originalInput.style.opacity = '0';
+                            originalInput.style.position = 'relative';
+                            originalInput.style.zIndex = '0';
+                            parentDiv.style.position = 'relative';
+                            parentDiv.appendChild(textInput);
+                            
+                            textInput.addEventListener('input', function() {
+                                originalInput.value = this.value;
+                            });
+                            
+                            originalInput.addEventListener('input', function() {
+                                if (textInput) textInput.value = this.value;
+                            });
+                            
+                            this.textContent = '🙈';
+                            console.log('👁️ Contraseña visible para:', targetId);
+                            
+                        } else if (existingTextInput) {
+                            existingTextInput.remove();
+                            originalInput.style.opacity = '1';
+                            originalInput.style.position = '';
+                            this.textContent = '👁️';
+                            console.log('👁️ Contraseña oculta para:', targetId);
+                        }
+                    });
+                });
+            }, 100);
+            
+            const migrateBtn = overlay.querySelector('#migrateBtn');
+            
+            migrateBtn.addEventListener('click', async () => {
+                const data = {};
+                
+                const area = overlay.querySelector('#migrationArea')?.value;
+                if (!area) {
+                    this.showMigrationMessage(overlay, '❌ Debes seleccionar tu área de trabajo', 'error');
+                    return;
+                }
+                data.area = area;
+                
+                if (needsMigration) {
+                    const currentPassword = overlay.querySelector('#currentPassword')?.value;
+                    const newPassword = overlay.querySelector('#newPassword')?.value;
+                    const confirmPassword = overlay.querySelector('#confirmNewPassword')?.value;
+                    
+                    if (!currentPassword) {
+                        this.showMigrationMessage(overlay, 'Debes ingresar tu contraseña actual', 'error');
+                        return;
+                    }
+                    
+                    if (!newPassword) {
+                        this.showMigrationMessage(overlay, 'Debes ingresar una nueva contraseña', 'error');
+                        return;
+                    }
+                    
+                    if (!confirmPassword) {
+                        this.showMigrationMessage(overlay, 'Debes confirmar la nueva contraseña', 'error');
+                        return;
+                    }
+                    
+                    if (newPassword.length < 8) {
+                        this.showMigrationMessage(overlay, 'La nueva contraseña debe tener al menos 8 caracteres', 'error');
+                        return;
+                    }
+                    
+                    if (newPassword.length > 15) {
+                        this.showMigrationMessage(overlay, 'La nueva contraseña no puede tener más de 15 caracteres', 'error');
+                        return;
+                    }
+                    
+                    if (newPassword !== confirmPassword) {
+                        this.showMigrationMessage(overlay, 'Las contraseñas nuevas no coinciden', 'error');
+                        return;
+                    }
+                    
+                    data.currentPassword = currentPassword;
+                    data.newPassword = newPassword;
+                }
+                
+                try {
+                    migrateBtn.disabled = true;
+                    migrateBtn.textContent = 'Procesando...';
+                    
+                    const result = await this.makeRequest('/usuarios/migrar', data);
+                    
+                    if (result.success) {
+                        this.currentUser = result.data;
+                        localStorage.setItem('currentUser', JSON.stringify(this.currentUser));
+                        
+                        this.showMigrationMessage(overlay, '✅ Datos actualizados correctamente. Recargando...', 'success');
+                        
+                        setTimeout(() => {
+                            restaurarScroll();
+                            window.location.reload();
+                        }, 2000);
+                    } else {
+                        throw new Error(result.message || 'Error en la migración');
+                    }
+                } catch (error) {
+                    this.showMigrationMessage(overlay, '❌ ' + error.message, 'error');
+                    migrateBtn.disabled = false;
+                    migrateBtn.textContent = 'Continuar';
+                }
+            });
+            
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) {
+                    if (confirm('¿Estás seguro? Si cierras esta ventana, no podrás acceder al sistema hasta completar tus datos.')) {
                         restaurarScroll();
-                        window.location.reload();
-                    }, 2000);
-                } else {
-                    throw new Error(result.message || 'Error en la migración');
+                        window.location.href = '/index.html';
+                    }
                 }
-            } catch (error) {
-                this.showMigrationMessage(overlay, '❌ ' + error.message, 'error');
-                migrateBtn.disabled = false;
-                migrateBtn.textContent = 'Continuar';
-            }
+            });
         });
-        
-        // Permitir cerrar el modal haciendo clic fuera
-        overlay.addEventListener('click', (e) => {
-            if (e.target === overlay) {
-                if (confirm('¿Estás seguro? Si cierras esta ventana, no podrás acceder al sistema hasta completar tus datos.')) {
-                    restaurarScroll();
-                    window.location.href = '/index.html';
-                }
-            }
-        });
-    });
-}
-
-showMigrationMessage(overlay, text, type) {
-    const msgDiv = overlay.querySelector('#migrationMessage');
-    msgDiv.style.display = 'block';
-    msgDiv.textContent = text;
-    msgDiv.style.background = type === 'error' ? '#5a2d2d' : type === 'info' ? '#2d5a5a' : '#2d5a2d';
-    msgDiv.style.color = type === 'error' ? '#ff6b6b' : type === 'info' ? '#6bffff' : '#6bff6b';
-    msgDiv.style.border = type === 'error' ? '1px solid #ff6b6b' : type === 'info' ? '1px solid #6bffff' : '1px solid #6bff6b';
-}
+    }
 
     showMigrationMessage(overlay, text, type) {
         const msgDiv = overlay.querySelector('#migrationMessage');
@@ -707,7 +663,6 @@ showMigrationMessage(overlay, text, type) {
         return roles[role] || '👤 Usuario';
     }
 
-    // MÉTODO DE LOGIN MODAL (con campo ÁREA agregado)
     showLoginModal() {
         if (this.isLoggedIn()) return Promise.resolve(this.currentUser);
         
@@ -905,7 +860,6 @@ showMigrationMessage(overlay, text, type) {
                                 </select>
                             </div>
                             
-                            <!-- NUEVO CAMPO: ÁREA DE TRABAJO -->
                             <div class="form-group" style="margin-bottom: 15px; display: block;">
                                 <label for="regArea" style="display: block; margin-bottom: 5px; font-weight: bold; color: #e0e0e0;">Área de Trabajo *</label>
                                 <select id="regArea" name="area" required style="
@@ -917,12 +871,7 @@ showMigrationMessage(overlay, text, type) {
                                     background: #1e1e2e;
                                     color: #e0e0e0;
                                 ">
-                                    <option value="">Seleccione área</option>
-                                    <option value="Camilleros">Camilleros</option>
-                                    <option value="Asistentes">Asistentes</option>
-                                    <option value="Enfermeros">Enfermeros</option>
-                                    <option value="Personal general del Sanatorio">Personal general del Sanatorio</option>
-                                    <option value="Otros profesionales de la salud">Otros profesionales de la salud</option>
+                                    <option value="">Cargando áreas...</option>
                                 </select>
                             </div>
                             
@@ -1012,8 +961,21 @@ showMigrationMessage(overlay, text, type) {
             `;
             
             document.body.appendChild(overlay);
-
-            // Funcionalidad de toggle password
+            
+            // POBLAR EL SELECT DE ÁREAS EN EL REGISTRO
+            const regAreaSelect = overlay.querySelector('#regArea');
+            if (regAreaSelect && window.areaData) {
+                window.areaData.poblarSelectAreas(regAreaSelect, '');
+            } else {
+                const checkInterval = setInterval(() => {
+                    if (window.areaData) {
+                        clearInterval(checkInterval);
+                        window.areaData.poblarSelectAreas(regAreaSelect, '');
+                    }
+                }, 100);
+                setTimeout(() => clearInterval(checkInterval), 5000);
+            }
+            
             overlay.querySelectorAll('.toggle-password').forEach(btn => {
                 btn.addEventListener('click', function() {
                     const targetId = this.dataset.target;
@@ -1027,7 +989,7 @@ showMigrationMessage(overlay, text, type) {
                     }
                 });
             });
-
+            
             const switchTab = (tabName) => {
                 console.log('Cambiando a tab:', tabName);
                 overlay.querySelectorAll('.login-tab').forEach(tab => {
@@ -1047,7 +1009,7 @@ showMigrationMessage(overlay, text, type) {
                     activeForm.style.display = 'block';
                 }
             };
-
+            
             overlay.querySelectorAll('.login-tab').forEach(tab => {
                 tab.addEventListener('click', (e) => {
                     const tabName = e.target.getAttribute('data-tab');
@@ -1065,7 +1027,7 @@ showMigrationMessage(overlay, text, type) {
                     }
                 });
             });
-
+            
             const showMessage = (formId, message, type) => {
                 const form = overlay.querySelector(`#${formId}`);
                 let messageDiv = form.querySelector('.message');
@@ -1092,7 +1054,7 @@ showMigrationMessage(overlay, text, type) {
                     }, 3000);
                 }
             };
-
+            
             overlay.querySelector('#loginFormElement').addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const formData = new FormData(e.target);

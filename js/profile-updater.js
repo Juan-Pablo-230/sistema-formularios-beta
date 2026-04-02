@@ -78,16 +78,13 @@ class ProfileUpdater {
                 roleBadge = ' ⭐';
             }
             
-            // Agregar área a la información mostrada
             userName.textContent = `👤 ${user.apellidoNombre} - Legajo: ${user.legajo}${roleBadge}`;
             userInfo.style.display = 'block';
 
-            // Mostrar botón de material
             if (this.materialButtonContainer) {
                 this.materialButtonContainer.style.display = 'block';
             }
 
-            // Mostrar botón de panel de administración si es admin o avanzado
             this.showAdminPanelButton(user);
 
             const userActions = document.querySelector('.user-actions');
@@ -318,12 +315,25 @@ class ProfileUpdater {
             document.getElementById('updateApellidoNombre').value = user.apellidoNombre || '';
             document.getElementById('updateLegajo').value = user.legajo || '';
             document.getElementById('updateTurno').value = user.turno || '';
-            document.getElementById('updateArea').value = user.area || ''; // 👈 NUEVO CAMPO
             document.getElementById('updateEmail').value = user.email || '';
             document.getElementById('updateCurrentPassword').value = '';
             document.getElementById('updatePassword').value = '';
             document.getElementById('updateConfirmPassword').value = '';
             document.getElementById('deleteCurrentPassword').value = '';
+            
+            // POBLAR EL SELECT DE ÁREAS usando areaData
+            const updateAreaSelect = document.getElementById('updateArea');
+            if (updateAreaSelect && window.areaData) {
+                window.areaData.poblarSelectAreas(updateAreaSelect, user.area || '');
+            } else {
+                const checkInterval = setInterval(() => {
+                    if (window.areaData) {
+                        clearInterval(checkInterval);
+                        window.areaData.poblarSelectAreas(updateAreaSelect, user.area || '');
+                    }
+                }, 100);
+                setTimeout(() => clearInterval(checkInterval), 5000);
+            }
             
             const deleteConfirmation = document.getElementById('deleteConfirmation');
             if (deleteConfirmation) deleteConfirmation.checked = false;
@@ -332,7 +342,6 @@ class ProfileUpdater {
             this.clearMessages();
             this.switchTab('update');
             
-            // Bloquear scroll del fondo
             document.body.style.overflow = 'hidden';
             
             modal.style.display = 'flex';
@@ -343,7 +352,6 @@ class ProfileUpdater {
         const modal = document.getElementById('updateProfileModal');
         if (modal) {
             modal.style.display = 'none';
-            // Restaurar scroll
             document.body.style.overflow = '';
             this.clearMessages();
             this.hideLegajoWarning();
@@ -441,7 +449,7 @@ class ProfileUpdater {
             apellidoNombre: formData.get('apellidoNombre'),
             legajo: formData.get('legajo'),
             turno: formData.get('turno'),
-            area: formData.get('area'), // 👈 NUEVO CAMPO
+            area: formData.get('area'),
             email: formData.get('email')
         };
 
@@ -659,7 +667,6 @@ class ProfileUpdater {
     }
 }
 
-// Inicializar cuando el DOM esté listo
 document.addEventListener('DOMContentLoaded', function() {
     const checkAuthSystem = setInterval(() => {
         if (typeof authSystem !== 'undefined') {
@@ -669,7 +676,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }, 100);
 });
 
-// Override del método login de authSystem para actualizar la UI
 if (typeof authSystem !== 'undefined') {
     const originalLogin = authSystem.login;
     authSystem.login = async function(...args) {
