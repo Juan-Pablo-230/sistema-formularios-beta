@@ -10,14 +10,15 @@ const area = {
         "Medicos",
         "Kinesiólogos",
         "Nutricionistas",
-        "Obstétricas"
+        "Obstétricas",
+        "Otros"
     ],
     "Personal de apoyo y administrativo": [
         "Mucamas",
         "Camareras",
         "Personal de limpieza",
         "Personal administrativo"
-    ],
+    ]
 };
 
 // Función para poblar selects
