@@ -1,41 +1,26 @@
 // js/area.js - Áreas de trabajo del Sanatorio (FUENTE ÚNICA DE VERDAD)
 const area = {
-    "Personal Asistencial": [
+    "Personal de enfermeria": [
+        "Enfermeros",
         "Camilleros",
         "Asistentes",
-        "Enfermeros",
-        "Médicos",
-        "Técnicos en Radiología",
-        "Farmacia",
-        "Laboratorio",
-        "Kinesiología",
-        "Nutrición",
-        "Psicología",
-        "Trabajo Social"
+        "Técnicos en prácticas cardiológicas",
+        "Supervisores/Coordinadores"
     ],
-    "Personal Administrativo": [
-        "Admisión",
-        "Facturación",
-        "Recursos Humanos",
-        "Administración General",
-        "Contaduría",
-        "Compras",
-        "Archivo Médico"
+    "Supervisores/Coordinadores": [
+        "Medicos",
+        "Kinesiólogos",
+        "Nutricionistas",
+        "Obstétricas",
+        "Otros"
     ],
-    "Personal de Soporte": [
-        "Mantenimiento",
-        "Limpieza",
-        "Seguridad",
-        "Informática/Sistemas",
-        "Logística",
-        "Cocina"
+    "Personal de apoyo y administrativo": [
+        "Mucamas",
+        "Camareras",
+        "Personal de limpieza",
+        "Personal administrativo",
+        "Personal administrativo"
     ],
-    "Personal General": [
-        "Personal general del Sanatorio"
-    ],
-    "Otros": [
-        "Otros profesionales de la salud"
-    ]
 };
 
 // Función global para poblar cualquier select con las áreas

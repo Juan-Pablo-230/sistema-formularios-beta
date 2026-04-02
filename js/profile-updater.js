@@ -321,15 +321,15 @@ class ProfileUpdater {
             document.getElementById('updateConfirmPassword').value = '';
             document.getElementById('deleteCurrentPassword').value = '';
             
-            // POBLAR EL SELECT DE ÁREAS usando areaData
+            // POBLAR EL SELECT DE ÁREAS usando area
             const updateAreaSelect = document.getElementById('updateArea');
-            if (updateAreaSelect && window.areaData) {
-                window.areaData.poblarSelectAreas(updateAreaSelect, user.area || '');
+            if (updateAreaSelect && window.area) {
+                window.area.poblarSelectAreas(updateAreaSelect, user.area || '');
             } else {
                 const checkInterval = setInterval(() => {
-                    if (window.areaData) {
+                    if (window.area) {
                         clearInterval(checkInterval);
-                        window.areaData.poblarSelectAreas(updateAreaSelect, user.area || '');
+                        window.area.poblarSelectAreas(updateAreaSelect, user.area || '');
                     }
                 }, 100);
                 setTimeout(() => clearInterval(checkInterval), 5000);
