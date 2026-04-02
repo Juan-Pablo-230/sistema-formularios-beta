@@ -42,7 +42,8 @@ function poblarSelectAreas(selectElement, valorSeleccionado = '') {
     }
 }
 
-// Exponer la función globalmente
+// Exponer GLOBALMENTE tanto la variable como la función
+window.area = area;  // 👈 ESTA LÍNEA ES LA CLAVE
 window.poblarSelectAreas = poblarSelectAreas;
 
 // Auto-poblar cuando el DOM esté listo
