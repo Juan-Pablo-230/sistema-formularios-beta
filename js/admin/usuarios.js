@@ -315,7 +315,7 @@ class UsuariosManager {
         const legajo = document.getElementById('userLegajo').value.trim();
         const email = document.getElementById('userEmail').value.trim();
         const turno = document.getElementById('userTurno').value;
-        const area = document.getElementById('userArea').value;
+        const area = document.getElementById('updateArea').value;
         const role = document.getElementById('userRole').value;
         const password = document.getElementById('userPassword').value;
         
