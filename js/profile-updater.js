@@ -308,45 +308,86 @@ class ProfileUpdater {
     }
 
     showUpdateModal() {
-        const modal = document.getElementById('updateProfileModal');
-        const user = authSystem.getCurrentUser();
+    const modal = document.getElementById('updateProfileModal');
+    const user = authSystem.getCurrentUser();
 
-        if (modal && user) {
-            document.getElementById('updateApellidoNombre').value = user.apellidoNombre || '';
-            document.getElementById('updateLegajo').value = user.legajo || '';
-            document.getElementById('updateTurno').value = user.turno || '';
-            document.getElementById('updateEmail').value = user.email || '';
-            document.getElementById('updateCurrentPassword').value = '';
-            document.getElementById('updatePassword').value = '';
-            document.getElementById('updateConfirmPassword').value = '';
-            document.getElementById('deleteCurrentPassword').value = '';
+    if (modal && user) {
+        document.getElementById('updateApellidoNombre').value = user.apellidoNombre || '';
+        document.getElementById('updateLegajo').value = user.legajo || '';
+        document.getElementById('updateTurno').value = user.turno || '';
+        document.getElementById('updateEmail').value = user.email || '';
+        document.getElementById('updateCurrentPassword').value = '';
+        document.getElementById('updatePassword').value = '';
+        document.getElementById('updateConfirmPassword').value = '';
+        document.getElementById('deleteCurrentPassword').value = '';
+        
+        // ========== POBLAR SELECT DE ÁREAS (VERSIÓN CORREGIDA) ==========
+        const updateAreaSelect = document.getElementById('updateArea');
+        if (updateAreaSelect) {
+            updateAreaSelect.innerHTML = '<option value="">Seleccione un área</option>';
             
-            // POBLAR EL SELECT DE ÁREAS usando area
-            const updateAreaSelect = document.getElementById('updateArea');
-            if (updateAreaSelect && window.poblarSelectAreas) {
+            // Intentar usar window.poblarSelectAreas si existe
+            if (typeof window.poblarSelectAreas === 'function') {
                 window.poblarSelectAreas(updateAreaSelect, user.area || '');
-            } else {
-                const checkInterval = setInterval(() => {
-                    if (window.area) {
-                        clearInterval(checkInterval);
-                        window.area.poblarSelectAreas(updateAreaSelect, user.area || '');
-                    }
-                }, 100);
-                setTimeout(() => clearInterval(checkInterval), 5000);
+                console.log('✅ Áreas pobladas con poblarSelectAreas');
             }
-            
-            const deleteConfirmation = document.getElementById('deleteConfirmation');
-            if (deleteConfirmation) deleteConfirmation.checked = false;
-
-            this.hideLegajoWarning();
-            this.clearMessages();
-            this.switchTab('update');
-            
-            document.body.style.overflow = 'hidden';
-            
-            modal.style.display = 'flex';
+            // Si no existe, usar window.area directamente
+            else if (window.area && typeof window.area === 'object') {
+                console.log('📦 Usando window.area directamente');
+                for (const categoria in window.area) {
+                    const optgroup = document.createElement('optgroup');
+                    optgroup.label = categoria;
+                    window.area[categoria].forEach(areaName => {
+                        const option = document.createElement('option');
+                        option.value = areaName;
+                        option.textContent = areaName;
+                        if (user.area === areaName) {
+                            option.selected = true;
+                        }
+                        optgroup.appendChild(option);
+                    });
+                    updateAreaSelect.appendChild(optgroup);
+                }
+            }
+            // Fallback final: datos hardcodeados
+            else {
+                console.warn('⚠️ Usando datos hardcodeados para áreas');
+                const areasHardcodeadas = {
+                    "Personal de enfermeria": ["Enfermeros", "Camilleros", "Asistentes", "Técnicos en prácticas cardiológicas"],
+                    "Profesionales": ["Medicos", "Kinesiólogos", "Nutricionistas", "Obstétricas"],
+                    "Personal de apoyo y administrativo": ["Mucamas", "Camareras", "Personal de limpieza", "Personal administrativo", "Supervisores/Coordinadores", "Otros"]
+                };
+                
+                for (const cat in areasHardcodeadas) {
+                    const optgroup = document.createElement('optgroup');
+                    optgroup.label = cat;
+                    areasHardcodeadas[cat].forEach(areaName => {
+                        const option = document.createElement('option');
+                        option.value = areaName;
+                        option.textContent = areaName;
+                        if (user.area === areaName) {
+                            option.selected = true;
+                        }
+                        optgroup.appendChild(option);
+                    });
+                    updateAreaSelect.appendChild(optgroup);
+                }
+            }
         }
+        // ========== FIN POBLAR SELECT DE ÁREAS ==========
+        
+        const deleteConfirmation = document.getElementById('deleteConfirmation');
+        if (deleteConfirmation) deleteConfirmation.checked = false;
+
+        this.hideLegajoWarning();
+        this.clearMessages();
+        this.switchTab('update');
+        
+        document.body.style.overflow = 'hidden';
+        
+        modal.style.display = 'flex';
     }
+}
 
     hideUpdateModal() {
         const modal = document.getElementById('updateProfileModal');
